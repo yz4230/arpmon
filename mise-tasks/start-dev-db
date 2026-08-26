@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+docker run -d --rm \
+  --name arpmon-dev-db \
+  -e POSTGRES_USER="$DB_USER" \
+  -e POSTGRES_PASSWORD="$DB_PASSWORD" \
+  -e POSTGRES_DB="$DB_NAME" \
+  -p 5432:5432 \
+  postgres:18.6
