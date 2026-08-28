@@ -12,7 +12,7 @@ import (
 var PingDBCmd = &cobra.Command{
 	Use: "pingdb",
 	Run: func(cmd *cobra.Command, args []string) {
-		config, err := db.LoadDBConfig()
+		config, err := db.LoadConfigFromEnv()
 		if err != nil {
 			slog.Error("Failed to load database configuration", "error", err)
 			return

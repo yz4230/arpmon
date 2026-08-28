@@ -7,7 +7,7 @@ import (
 	"github.com/lib/pq"
 )
 
-func LoadDBConfig() (pq.Config, error) {
+func LoadConfigFromEnv() (pq.Config, error) {
 	port, err := strconv.Atoi(os.Getenv("DB_PORT"))
 	if err != nil {
 		return pq.Config{}, err
@@ -19,6 +19,6 @@ func LoadDBConfig() (pq.Config, error) {
 		User:     os.Getenv("DB_USER"),
 		Password: os.Getenv("DB_PASSWORD"),
 		Database: os.Getenv("DB_NAME"),
-		SSLMode:  pq.SSLMode(os.Getenv("DB_SSLMODE")),
+		SSLMode:  pq.SSLMode(os.Getenv("DB_SSL_MODE")),
 	}, nil
 }

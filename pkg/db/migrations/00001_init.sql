@@ -1,0 +1,54 @@
+CREATE TABLE members(
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE member_attendances(
+  id SERIAL PRIMARY KEY,
+  member_id INT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE devices(
+  id SERIAL PRIMARY KEY,
+  mac_address CHAR(12) NOT NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE device_probes(
+  id SERIAL PRIMARY KEY,
+  device_id INT NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at := CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_members_updated_at
+BEFORE UPDATE ON members
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_member_attendances_updated_at
+BEFORE UPDATE ON member_attendances
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_devices_updated_at
+BEFORE UPDATE ON devices
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_device_probes_updated_at
+BEFORE UPDATE ON device_probes
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
