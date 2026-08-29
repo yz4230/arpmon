@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/yz4230/arpmon/cmd/pingdbcmd"
 	"github.com/yz4230/arpmon/cmd/scancmd"
+	"github.com/yz4230/arpmon/cmd/servecmd"
 )
 
 var rootPstFlags struct {
@@ -39,8 +40,9 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.AddCommand(scancmd.ScanCmd)
 	rootCmd.AddCommand(pingdbcmd.PingDBCmd)
+	rootCmd.AddCommand(scancmd.ScanCmd)
+	rootCmd.AddCommand(servecmd.ServeCmd)
 
 	rootCmd.PersistentFlags().BoolVarP(&rootPstFlags.verbose, "verbose", "v", false, "Enable verbose output")
 }
