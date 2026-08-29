@@ -1,0 +1,127 @@
+package repository
+
+import (
+	"context"
+	"database/sql"
+
+	"github.com/yz4230/arpmon/pkg/domain"
+)
+
+type DeviceProbeRepository interface {
+	CreateDeviceProbe(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error)
+	GetDeviceProbeByID(ctx context.Context, tx *sql.Tx, id int) (*domain.DeviceProbe, error)
+	ListDeviceProbes(ctx context.Context, tx *sql.Tx) ([]*domain.DeviceProbe, error)
+	UpdateDeviceProbe(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error)
+	DeleteDeviceProbeByID(ctx context.Context, tx *sql.Tx, id int) error
+}
+
+type deviceProbeRepository struct{}
+
+func (r *deviceProbeRepository) CreateDeviceProbe(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error) {
+	rows, err := tx.QueryContext(ctx, `
+		INSERT INTO device_probes (device_id)
+		VALUES ($1)
+		RETURNING id, device_id, created_at, updated_at
+	`, probe.DeviceID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	if rows.Next() {
+		var p domain.DeviceProbe
+		if err := rows.Scan(&p.ID, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, err
+		}
+		return &p, nil
+	}
+
+	return nil, sql.ErrNoRows
+}
+
+func (r *deviceProbeRepository) GetDeviceProbeByID(ctx context.Context, tx *sql.Tx, id int) (*domain.DeviceProbe, error) {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id, device_id, created_at, updated_at
+		FROM device_probes
+		WHERE id = $1
+	`, id)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	if rows.Next() {
+		var p domain.DeviceProbe
+		if err := rows.Scan(&p.ID, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, err
+		}
+		return &p, nil
+	}
+
+	return nil, sql.ErrNoRows
+}
+
+func (r *deviceProbeRepository) ListDeviceProbes(ctx context.Context, tx *sql.Tx) ([]*domain.DeviceProbe, error) {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id, device_id, created_at, updated_at
+		FROM device_probes
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var probes []*domain.DeviceProbe
+	for rows.Next() {
+		var p domain.DeviceProbe
+		if err := rows.Scan(&p.ID, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, err
+		}
+		probes = append(probes, &p)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return probes, nil
+}
+
+func (r *deviceProbeRepository) UpdateDeviceProbe(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error) {
+	rows, err := tx.QueryContext(ctx, `
+		UPDATE device_probes
+		SET device_id = $1
+		WHERE id = $2
+		RETURNING id, device_id, created_at, updated_at
+	`, probe.DeviceID, probe.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	if rows.Next() {
+		var p domain.DeviceProbe
+		if err := rows.Scan(&p.ID, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, err
+		}
+		return &p, nil
+	}
+
+	return nil, sql.ErrNoRows
+}
+
+func (r *deviceProbeRepository) DeleteDeviceProbeByID(ctx context.Context, tx *sql.Tx, id int) error {
+	_, err := tx.ExecContext(ctx, `
+		DELETE FROM device_probes
+		WHERE id = $1
+	`, id)
+	return err
+}
+
+func NewDeviceProbeRepository() DeviceProbeRepository {
+	return &deviceProbeRepository{}
+}

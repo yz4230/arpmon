@@ -1,0 +1,127 @@
+package repository
+
+import (
+	"context"
+	"database/sql"
+
+	"github.com/yz4230/arpmon/pkg/domain"
+)
+
+type DeviceRepository interface {
+	CreateDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) (*domain.Device, error)
+	GetDeviceByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Device, error)
+	ListDevices(ctx context.Context, tx *sql.Tx) ([]*domain.Device, error)
+	UpdateDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) (*domain.Device, error)
+	DeleteDeviceByID(ctx context.Context, tx *sql.Tx, id int) error
+}
+
+type deviceRepository struct{}
+
+func (r *deviceRepository) CreateDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) (*domain.Device, error) {
+	rows, err := tx.QueryContext(ctx, `
+		INSERT INTO devices (mac_address)
+		VALUES ($1)
+		RETURNING id, mac_address, created_at, updated_at
+	`, device.MacAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	if rows.Next() {
+		var d domain.Device
+		if err := rows.Scan(&d.ID, &d.MacAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			return nil, err
+		}
+		return &d, nil
+	}
+
+	return nil, sql.ErrNoRows
+}
+
+func (r *deviceRepository) GetDeviceByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Device, error) {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id, mac_address, created_at, updated_at
+		FROM devices
+		WHERE id = $1
+	`, id)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	if rows.Next() {
+		var d domain.Device
+		if err := rows.Scan(&d.ID, &d.MacAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			return nil, err
+		}
+		return &d, nil
+	}
+
+	return nil, sql.ErrNoRows
+}
+
+func (r *deviceRepository) ListDevices(ctx context.Context, tx *sql.Tx) ([]*domain.Device, error) {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id, mac_address, created_at, updated_at
+		FROM devices
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var devices []*domain.Device
+	for rows.Next() {
+		var d domain.Device
+		if err := rows.Scan(&d.ID, &d.MacAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			return nil, err
+		}
+		devices = append(devices, &d)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return devices, nil
+}
+
+func (r *deviceRepository) UpdateDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) (*domain.Device, error) {
+	rows, err := tx.QueryContext(ctx, `
+		UPDATE devices
+		SET mac_address = $1
+		WHERE id = $2
+		RETURNING id, mac_address, created_at, updated_at
+	`, device.MacAddress, device.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	if rows.Next() {
+		var d domain.Device
+		if err := rows.Scan(&d.ID, &d.MacAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			return nil, err
+		}
+		return &d, nil
+	}
+
+	return nil, sql.ErrNoRows
+}
+
+func (r *deviceRepository) DeleteDeviceByID(ctx context.Context, tx *sql.Tx, id int) error {
+	_, err := tx.ExecContext(ctx, `
+		DELETE FROM devices
+		WHERE id = $1
+	`, id)
+	return err
+}
+
+func NewDeviceRepository() DeviceRepository {
+	return &deviceRepository{}
+}
