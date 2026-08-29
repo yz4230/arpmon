@@ -26,8 +26,14 @@ type Device struct {
 	MacAddress string
 }
 
+type Probe struct {
+	Timestamp
+	ID int
+}
+
 type DeviceProbe struct {
 	Timestamp
 	ID       int
 	DeviceID int
+	ProbeID  int
 }

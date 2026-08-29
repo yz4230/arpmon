@@ -30,18 +30,23 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateDevice failed: %v", err)
 	}
+	probeRepo := NewProbeRepository()
+	parentProbe, err := probeRepo.CreateProbe(context.Background(), tx)
+	if err != nil {
+		t.Fatalf("CreateProbe failed: %v", err)
+	}
 
 	repo := NewDeviceProbeRepository()
 
 	// Create a new device probe
-	probe := &domain.DeviceProbe{DeviceID: firstDevice.ID}
+	probe := &domain.DeviceProbe{DeviceID: firstDevice.ID, ProbeID: parentProbe.ID}
 	created, err := repo.CreateDeviceProbe(context.Background(), tx, probe)
 	if err != nil {
 		t.Fatalf("CreateDeviceProbe failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, created)
-	if created.DeviceID != probe.DeviceID {
+	if created.DeviceID != probe.DeviceID || created.ProbeID != probe.ProbeID {
 		t.Fatalf("Created device probe does not match")
 	}
 
@@ -52,7 +57,7 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 	}
 
 	testutil.AssertAllFieldsNonZero(t, retrieved)
-	if retrieved.ID != created.ID || retrieved.DeviceID != created.DeviceID {
+	if retrieved.ID != created.ID || retrieved.DeviceID != created.DeviceID || retrieved.ProbeID != created.ProbeID {
 		t.Fatalf("Retrieved device probe does not match created device probe")
 	}
 
@@ -82,7 +87,7 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListDeviceProbes failed: %v", err)
 	}
-	if len(probes) != 1 || probes[0].ID != created.ID || probes[0].DeviceID != secondDevice.ID {
+	if len(probes) != 1 || probes[0].ID != created.ID || probes[0].DeviceID != secondDevice.ID || probes[0].ProbeID != parentProbe.ID {
 		t.Fatalf("ListDeviceProbes returned unexpected results")
 	}
 

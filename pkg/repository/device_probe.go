@@ -19,10 +19,10 @@ type deviceProbeRepository struct{}
 
 func (r *deviceProbeRepository) CreateDeviceProbe(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error) {
 	rows, err := tx.QueryContext(ctx, `
-		INSERT INTO device_probes (device_id)
-		VALUES ($1)
-		RETURNING id, device_id, created_at, updated_at
-	`, probe.DeviceID)
+		INSERT INTO device_probes (device_id, probe_id)
+		VALUES ($1, $2)
+		RETURNING id, device_id, probe_id, created_at, updated_at
+	`, probe.DeviceID, probe.ProbeID)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (r *deviceProbeRepository) CreateDeviceProbe(ctx context.Context, tx *sql.T
 
 	if rows.Next() {
 		var p domain.DeviceProbe
-		if err := rows.Scan(&p.ID, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.DeviceID, &p.ProbeID, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		return &p, nil
@@ -42,7 +42,7 @@ func (r *deviceProbeRepository) CreateDeviceProbe(ctx context.Context, tx *sql.T
 
 func (r *deviceProbeRepository) GetDeviceProbeByID(ctx context.Context, tx *sql.Tx, id int) (*domain.DeviceProbe, error) {
 	rows, err := tx.QueryContext(ctx, `
-		SELECT id, device_id, created_at, updated_at
+		SELECT id, device_id, probe_id, created_at, updated_at
 		FROM device_probes
 		WHERE id = $1
 	`, id)
@@ -54,7 +54,7 @@ func (r *deviceProbeRepository) GetDeviceProbeByID(ctx context.Context, tx *sql.
 
 	if rows.Next() {
 		var p domain.DeviceProbe
-		if err := rows.Scan(&p.ID, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.DeviceID, &p.ProbeID, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		return &p, nil
@@ -65,7 +65,7 @@ func (r *deviceProbeRepository) GetDeviceProbeByID(ctx context.Context, tx *sql.
 
 func (r *deviceProbeRepository) ListDeviceProbes(ctx context.Context, tx *sql.Tx) ([]*domain.DeviceProbe, error) {
 	rows, err := tx.QueryContext(ctx, `
-		SELECT id, device_id, created_at, updated_at
+		SELECT id, device_id, probe_id, created_at, updated_at
 		FROM device_probes
 	`)
 	if err != nil {
@@ -77,7 +77,7 @@ func (r *deviceProbeRepository) ListDeviceProbes(ctx context.Context, tx *sql.Tx
 	var probes []*domain.DeviceProbe
 	for rows.Next() {
 		var p domain.DeviceProbe
-		if err := rows.Scan(&p.ID, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.DeviceID, &p.ProbeID, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		probes = append(probes, &p)
@@ -93,10 +93,10 @@ func (r *deviceProbeRepository) ListDeviceProbes(ctx context.Context, tx *sql.Tx
 func (r *deviceProbeRepository) UpdateDeviceProbe(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error) {
 	rows, err := tx.QueryContext(ctx, `
 		UPDATE device_probes
-		SET device_id = $1
-		WHERE id = $2
-		RETURNING id, device_id, created_at, updated_at
-	`, probe.DeviceID, probe.ID)
+		SET device_id = $1, probe_id = $2
+		WHERE id = $3
+		RETURNING id, device_id, probe_id, created_at, updated_at
+	`, probe.DeviceID, probe.ProbeID, probe.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (r *deviceProbeRepository) UpdateDeviceProbe(ctx context.Context, tx *sql.T
 
 	if rows.Next() {
 		var p domain.DeviceProbe
-		if err := rows.Scan(&p.ID, &p.DeviceID, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.DeviceID, &p.ProbeID, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		return &p, nil
