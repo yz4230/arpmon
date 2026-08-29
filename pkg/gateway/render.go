@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"time"
 
 	"github.com/labstack/echo/v5"
 )
@@ -17,9 +18,15 @@ type TemplateRenderer struct {
 	templates map[string]*template.Template
 }
 
+func formatDateTime(value time.Time) string {
+	return value.Format(time.DateTime)
+}
+
 func NewTemplateRenderer() *TemplateRenderer {
-	const ext = ".html.tpl"
-	base := template.Must(template.ParseFS(templateFiles, path.Join("templates", "base"+ext)))
+	const ext = ".html.tmpl"
+	base := template.Must(template.New("base").Funcs(template.FuncMap{
+		"formatDateTime": formatDateTime,
+	}).ParseFS(templateFiles, path.Join("templates", "base"+ext)))
 
 	mustParse := func(base *template.Template, page string) *template.Template {
 		tmpl, err := base.Clone()
