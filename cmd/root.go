@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/lmittmann/tint"
 	"github.com/spf13/cobra"
 	"github.com/yz4230/arpmon/cmd/migratedbcmd"
@@ -16,6 +17,7 @@ import (
 
 var rootPstFlags struct {
 	verbose bool
+	envFile string
 }
 
 var rootCmd = &cobra.Command{
@@ -27,6 +29,12 @@ var rootCmd = &cobra.Command{
 		}
 		logger := slog.New(tint.NewTextHandler(os.Stderr, options))
 		slog.SetDefault(logger)
+
+		if file := rootPstFlags.envFile; file != "" {
+			if err := godotenv.Load(file); err != nil {
+				slog.Warn("Failed to load .env file", "file", file, "error", err)
+			}
+		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
@@ -47,4 +55,5 @@ func init() {
 	rootCmd.AddCommand(servecmd.ServeCmd)
 
 	rootCmd.PersistentFlags().BoolVarP(&rootPstFlags.verbose, "verbose", "v", false, "Enable verbose output")
+	rootCmd.PersistentFlags().StringVarP(&rootPstFlags.envFile, "env-file", "e", ".env", "Path to the .env file")
 }
