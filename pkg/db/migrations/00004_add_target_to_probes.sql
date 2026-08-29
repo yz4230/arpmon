@@ -1,0 +1,8 @@
+ALTER TABLE probes
+ADD COLUMN target CIDR;
+
+UPDATE probes
+SET target = '192.168.1.0/24';
+
+ALTER TABLE probes
+ALTER COLUMN target SET NOT NULL;

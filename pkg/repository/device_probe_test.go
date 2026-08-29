@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"net"
 	"testing"
 	"time"
 
@@ -31,7 +32,11 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 		t.Fatalf("CreateDevice failed: %v", err)
 	}
 	probeRepo := NewProbeRepository()
-	parentProbe, err := probeRepo.CreateProbe(context.Background(), tx)
+	_, target, err := net.ParseCIDR("192.168.1.0/24")
+	if err != nil {
+		t.Fatal(err)
+	}
+	parentProbe, err := probeRepo.CreateProbe(context.Background(), tx, &domain.Probe{Target: target})
 	if err != nil {
 		t.Fatalf("CreateProbe failed: %v", err)
 	}

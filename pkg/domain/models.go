@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"net"
+	"time"
+)
 
 type Timestamp struct {
 	CreatedAt time.Time
@@ -28,7 +31,8 @@ type Device struct {
 
 type Probe struct {
 	Timestamp
-	ID int
+	ID     int
+	Target *net.IPNet
 }
 
 type DeviceProbe struct {
