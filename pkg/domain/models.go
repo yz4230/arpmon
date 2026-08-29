@@ -15,8 +15,9 @@ type Member struct {
 
 type MemberAttendance struct {
 	Timestamp
-	ID       int
-	MemberID int
+	ID        int
+	MemberID  int
+	IsPresent bool
 }
 
 type Device struct {
