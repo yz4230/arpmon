@@ -25,9 +25,9 @@ func TestMemberRepositoryCRUD(t *testing.T) {
 
 	// Create a new member
 	member := &domain.Member{Name: "John Doe"}
-	created, err := repo.CreateMember(context.Background(), tx, member)
+	created, err := repo.Create(context.Background(), tx, member)
 	if err != nil {
-		t.Fatalf("CreateMember failed: %v", err)
+		t.Fatalf("Create failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, created)
@@ -36,9 +36,9 @@ func TestMemberRepositoryCRUD(t *testing.T) {
 	}
 
 	// Get the member by ID
-	retrieved, err := repo.GetMemberByID(context.Background(), tx, created.ID)
+	retrieved, err := repo.GetByID(context.Background(), tx, created.ID)
 	if err != nil {
-		t.Fatalf("GetMemberByID failed: %v", err)
+		t.Fatalf("GetByID failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, retrieved)
@@ -59,27 +59,27 @@ func TestMemberRepositoryCRUD(t *testing.T) {
 
 	// Update the member
 	retrieved.Name = "Jane Doe"
-	updated, err := repo.UpdateMember(context.Background(), tx, retrieved)
+	updated, err := repo.Update(context.Background(), tx, retrieved)
 	if err != nil {
-		t.Fatalf("UpdateMember failed: %v", err)
+		t.Fatalf("Update failed: %v", err)
 	}
 	if updated.Name != "Jane Doe" || !updated.UpdatedAt.After(updated.CreatedAt) {
 		t.Fatalf("Updated member does not match expected values")
 	}
 
 	// List members
-	members, err := repo.ListMembers(context.Background(), tx)
+	members, err := repo.List(context.Background(), tx)
 	if err != nil {
-		t.Fatalf("ListMembers failed: %v", err)
+		t.Fatalf("List failed: %v", err)
 	}
 	if len(members) != 1 || members[0].ID != created.ID {
-		t.Fatalf("ListMembers returned unexpected results")
+		t.Fatalf("List returned unexpected results")
 	}
 
 	// Delete the member
-	err = repo.DeleteMemberByID(context.Background(), tx, created.ID)
+	err = repo.DeleteByID(context.Background(), tx, created.ID)
 	if err != nil {
-		t.Fatalf("DeleteMemberByID failed: %v", err)
+		t.Fatalf("DeleteByID failed: %v", err)
 	}
 
 	if err := tx.Commit(); err != nil {

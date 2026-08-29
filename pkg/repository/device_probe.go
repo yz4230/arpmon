@@ -10,17 +10,17 @@ import (
 )
 
 type DeviceProbeRepository interface {
-	CreateDeviceProbe(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error)
-	CreateManyDeviceProbes(ctx context.Context, tx *sql.Tx, probes []*domain.DeviceProbe) ([]*domain.DeviceProbe, error)
-	GetDeviceProbeByID(ctx context.Context, tx *sql.Tx, id int) (*domain.DeviceProbe, error)
-	ListDeviceProbes(ctx context.Context, tx *sql.Tx) ([]*domain.DeviceProbe, error)
-	UpdateDeviceProbe(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error)
-	DeleteDeviceProbeByID(ctx context.Context, tx *sql.Tx, id int) error
+	Create(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error)
+	CreateMany(ctx context.Context, tx *sql.Tx, probes []*domain.DeviceProbe) ([]*domain.DeviceProbe, error)
+	GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.DeviceProbe, error)
+	List(ctx context.Context, tx *sql.Tx) ([]*domain.DeviceProbe, error)
+	Update(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error)
+	DeleteByID(ctx context.Context, tx *sql.Tx, id int) error
 }
 
 type deviceProbeRepository struct{}
 
-func (r *deviceProbeRepository) CreateDeviceProbe(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error) {
+func (r *deviceProbeRepository) Create(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error) {
 	rows, err := tx.QueryContext(ctx, `
 		INSERT INTO device_probes (device_id, probe_id)
 		VALUES ($1, $2)
@@ -43,7 +43,7 @@ func (r *deviceProbeRepository) CreateDeviceProbe(ctx context.Context, tx *sql.T
 	return nil, sql.ErrNoRows
 }
 
-func (r *deviceProbeRepository) CreateManyDeviceProbes(ctx context.Context, tx *sql.Tx, probes []*domain.DeviceProbe) ([]*domain.DeviceProbe, error) {
+func (r *deviceProbeRepository) CreateMany(ctx context.Context, tx *sql.Tx, probes []*domain.DeviceProbe) ([]*domain.DeviceProbe, error) {
 	if len(probes) == 0 {
 		return nil, nil
 	}
@@ -81,7 +81,7 @@ func (r *deviceProbeRepository) CreateManyDeviceProbes(ctx context.Context, tx *
 	return created, nil
 }
 
-func (r *deviceProbeRepository) GetDeviceProbeByID(ctx context.Context, tx *sql.Tx, id int) (*domain.DeviceProbe, error) {
+func (r *deviceProbeRepository) GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.DeviceProbe, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, device_id, probe_id, created_at, updated_at
 		FROM device_probes
@@ -104,7 +104,7 @@ func (r *deviceProbeRepository) GetDeviceProbeByID(ctx context.Context, tx *sql.
 	return nil, sql.ErrNoRows
 }
 
-func (r *deviceProbeRepository) ListDeviceProbes(ctx context.Context, tx *sql.Tx) ([]*domain.DeviceProbe, error) {
+func (r *deviceProbeRepository) List(ctx context.Context, tx *sql.Tx) ([]*domain.DeviceProbe, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, device_id, probe_id, created_at, updated_at
 		FROM device_probes
@@ -131,7 +131,7 @@ func (r *deviceProbeRepository) ListDeviceProbes(ctx context.Context, tx *sql.Tx
 	return probes, nil
 }
 
-func (r *deviceProbeRepository) UpdateDeviceProbe(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error) {
+func (r *deviceProbeRepository) Update(ctx context.Context, tx *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error) {
 	rows, err := tx.QueryContext(ctx, `
 		UPDATE device_probes
 		SET device_id = $1, probe_id = $2
@@ -155,7 +155,7 @@ func (r *deviceProbeRepository) UpdateDeviceProbe(ctx context.Context, tx *sql.T
 	return nil, sql.ErrNoRows
 }
 
-func (r *deviceProbeRepository) DeleteDeviceProbeByID(ctx context.Context, tx *sql.Tx, id int) error {
+func (r *deviceProbeRepository) DeleteByID(ctx context.Context, tx *sql.Tx, id int) error {
 	_, err := tx.ExecContext(ctx, `
 		DELETE FROM device_probes
 		WHERE id = $1

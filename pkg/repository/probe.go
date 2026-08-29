@@ -10,15 +10,15 @@ import (
 )
 
 type ProbeRepository interface {
-	CreateProbe(ctx context.Context, tx *sql.Tx, probe *domain.Probe) (*domain.Probe, error)
-	GetProbeByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Probe, error)
-	ListProbes(ctx context.Context, tx *sql.Tx) ([]*domain.Probe, error)
-	DeleteProbeByID(ctx context.Context, tx *sql.Tx, id int) error
+	Create(ctx context.Context, tx *sql.Tx, probe *domain.Probe) (*domain.Probe, error)
+	GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Probe, error)
+	List(ctx context.Context, tx *sql.Tx) ([]*domain.Probe, error)
+	DeleteByID(ctx context.Context, tx *sql.Tx, id int) error
 }
 
 type probeRepository struct{}
 
-func (r *probeRepository) CreateProbe(ctx context.Context, tx *sql.Tx, probe *domain.Probe) (*domain.Probe, error) {
+func (r *probeRepository) Create(ctx context.Context, tx *sql.Tx, probe *domain.Probe) (*domain.Probe, error) {
 	rows, err := tx.QueryContext(ctx, `
 		INSERT INTO probes (target)
 		VALUES ($1)
@@ -36,7 +36,7 @@ func (r *probeRepository) CreateProbe(ctx context.Context, tx *sql.Tx, probe *do
 	return nil, sql.ErrNoRows
 }
 
-func (r *probeRepository) GetProbeByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Probe, error) {
+func (r *probeRepository) GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Probe, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, target, created_at, updated_at
 		FROM probes
@@ -54,7 +54,7 @@ func (r *probeRepository) GetProbeByID(ctx context.Context, tx *sql.Tx, id int) 
 	return nil, sql.ErrNoRows
 }
 
-func (r *probeRepository) ListProbes(ctx context.Context, tx *sql.Tx) ([]*domain.Probe, error) {
+func (r *probeRepository) List(ctx context.Context, tx *sql.Tx) ([]*domain.Probe, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, target, created_at, updated_at
 		FROM probes
@@ -94,7 +94,7 @@ func scanProbe(rows *sql.Rows) (*domain.Probe, error) {
 	return &p, nil
 }
 
-func (r *probeRepository) DeleteProbeByID(ctx context.Context, tx *sql.Tx, id int) error {
+func (r *probeRepository) DeleteByID(ctx context.Context, tx *sql.Tx, id int) error {
 	_, err := tx.ExecContext(ctx, `
 		DELETE FROM probes
 		WHERE id = $1

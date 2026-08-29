@@ -23,31 +23,31 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 	}
 
 	deviceRepo := NewDeviceRepository()
-	firstDevice, err := deviceRepo.CreateDevice(context.Background(), tx, &domain.Device{MacAddress: "001122334455"})
+	firstDevice, err := deviceRepo.Create(context.Background(), tx, &domain.Device{MacAddress: "001122334455"})
 	if err != nil {
-		t.Fatalf("CreateDevice failed: %v", err)
+		t.Fatalf("Create failed: %v", err)
 	}
-	secondDevice, err := deviceRepo.CreateDevice(context.Background(), tx, &domain.Device{MacAddress: "aabbccddeeff"})
+	secondDevice, err := deviceRepo.Create(context.Background(), tx, &domain.Device{MacAddress: "aabbccddeeff"})
 	if err != nil {
-		t.Fatalf("CreateDevice failed: %v", err)
+		t.Fatalf("Create failed: %v", err)
 	}
 	probeRepo := NewProbeRepository()
 	_, target, err := net.ParseCIDR("192.168.1.0/24")
 	if err != nil {
 		t.Fatal(err)
 	}
-	parentProbe, err := probeRepo.CreateProbe(context.Background(), tx, &domain.Probe{Target: target})
+	parentProbe, err := probeRepo.Create(context.Background(), tx, &domain.Probe{Target: target})
 	if err != nil {
-		t.Fatalf("CreateProbe failed: %v", err)
+		t.Fatalf("Create failed: %v", err)
 	}
 
 	repo := NewDeviceProbeRepository()
 
 	// Create a new device probe
 	probe := &domain.DeviceProbe{DeviceID: firstDevice.ID, ProbeID: parentProbe.ID}
-	created, err := repo.CreateDeviceProbe(context.Background(), tx, probe)
+	created, err := repo.Create(context.Background(), tx, probe)
 	if err != nil {
-		t.Fatalf("CreateDeviceProbe failed: %v", err)
+		t.Fatalf("Create failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, created)
@@ -56,9 +56,9 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 	}
 
 	// Get the device probe by ID
-	retrieved, err := repo.GetDeviceProbeByID(context.Background(), tx, created.ID)
+	retrieved, err := repo.GetByID(context.Background(), tx, created.ID)
 	if err != nil {
-		t.Fatalf("GetDeviceProbeByID failed: %v", err)
+		t.Fatalf("GetByID failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, retrieved)
@@ -79,33 +79,33 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 
 	// Update the device probe
 	retrieved.DeviceID = secondDevice.ID
-	updated, err := repo.UpdateDeviceProbe(context.Background(), tx, retrieved)
+	updated, err := repo.Update(context.Background(), tx, retrieved)
 	if err != nil {
-		t.Fatalf("UpdateDeviceProbe failed: %v", err)
+		t.Fatalf("Update failed: %v", err)
 	}
 	if updated.DeviceID != secondDevice.ID || !updated.UpdatedAt.After(updated.CreatedAt) {
 		t.Fatalf("Updated device probe does not match expected values")
 	}
 
 	// List device probes
-	probes, err := repo.ListDeviceProbes(context.Background(), tx)
+	probes, err := repo.List(context.Background(), tx)
 	if err != nil {
-		t.Fatalf("ListDeviceProbes failed: %v", err)
+		t.Fatalf("List failed: %v", err)
 	}
 	if len(probes) != 1 || probes[0].ID != created.ID || probes[0].DeviceID != secondDevice.ID || probes[0].ProbeID != parentProbe.ID {
-		t.Fatalf("ListDeviceProbes returned unexpected results")
+		t.Fatalf("List returned unexpected results")
 	}
 
 	// Create multiple device probes
-	createdMany, err := repo.CreateManyDeviceProbes(context.Background(), tx, []*domain.DeviceProbe{
+	createdMany, err := repo.CreateMany(context.Background(), tx, []*domain.DeviceProbe{
 		{DeviceID: firstDevice.ID, ProbeID: parentProbe.ID},
 		{DeviceID: secondDevice.ID, ProbeID: parentProbe.ID},
 	})
 	if err != nil {
-		t.Fatalf("CreateManyDeviceProbes failed: %v", err)
+		t.Fatalf("CreateMany failed: %v", err)
 	}
 	if len(createdMany) != 2 {
-		t.Fatalf("CreateManyDeviceProbes returned %d device probes, want 2", len(createdMany))
+		t.Fatalf("CreateMany returned %d device probes, want 2", len(createdMany))
 	}
 	for i, probe := range createdMany {
 		testutil.AssertAllFieldsNonZero(t, probe)
@@ -114,15 +114,15 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 		}
 	}
 
-	empty, err := repo.CreateManyDeviceProbes(context.Background(), tx, nil)
+	empty, err := repo.CreateMany(context.Background(), tx, nil)
 	if err != nil || len(empty) != 0 {
-		t.Fatalf("CreateManyDeviceProbes with no probes returned %v, %v", empty, err)
+		t.Fatalf("CreateMany with no probes returned %v, %v", empty, err)
 	}
 
 	// Delete the device probe
-	err = repo.DeleteDeviceProbeByID(context.Background(), tx, created.ID)
+	err = repo.DeleteByID(context.Background(), tx, created.ID)
 	if err != nil {
-		t.Fatalf("DeleteDeviceProbeByID failed: %v", err)
+		t.Fatalf("DeleteByID failed: %v", err)
 	}
 
 	if err := tx.Commit(); err != nil {

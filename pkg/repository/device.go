@@ -8,16 +8,16 @@ import (
 )
 
 type DeviceRepository interface {
-	CreateDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) (*domain.Device, error)
-	GetDeviceByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Device, error)
-	ListDevices(ctx context.Context, tx *sql.Tx) ([]*domain.Device, error)
-	UpdateDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) (*domain.Device, error)
-	DeleteDeviceByID(ctx context.Context, tx *sql.Tx, id int) error
+	Create(ctx context.Context, tx *sql.Tx, device *domain.Device) (*domain.Device, error)
+	GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Device, error)
+	List(ctx context.Context, tx *sql.Tx) ([]*domain.Device, error)
+	Update(ctx context.Context, tx *sql.Tx, device *domain.Device) (*domain.Device, error)
+	DeleteByID(ctx context.Context, tx *sql.Tx, id int) error
 }
 
 type deviceRepository struct{}
 
-func (r *deviceRepository) CreateDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) (*domain.Device, error) {
+func (r *deviceRepository) Create(ctx context.Context, tx *sql.Tx, device *domain.Device) (*domain.Device, error) {
 	rows, err := tx.QueryContext(ctx, `
 		INSERT INTO devices (mac_address)
 		VALUES ($1)
@@ -40,7 +40,7 @@ func (r *deviceRepository) CreateDevice(ctx context.Context, tx *sql.Tx, device 
 	return nil, sql.ErrNoRows
 }
 
-func (r *deviceRepository) GetDeviceByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Device, error) {
+func (r *deviceRepository) GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Device, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, mac_address, created_at, updated_at
 		FROM devices
@@ -63,7 +63,7 @@ func (r *deviceRepository) GetDeviceByID(ctx context.Context, tx *sql.Tx, id int
 	return nil, sql.ErrNoRows
 }
 
-func (r *deviceRepository) ListDevices(ctx context.Context, tx *sql.Tx) ([]*domain.Device, error) {
+func (r *deviceRepository) List(ctx context.Context, tx *sql.Tx) ([]*domain.Device, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, mac_address, created_at, updated_at
 		FROM devices
@@ -90,7 +90,7 @@ func (r *deviceRepository) ListDevices(ctx context.Context, tx *sql.Tx) ([]*doma
 	return devices, nil
 }
 
-func (r *deviceRepository) UpdateDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) (*domain.Device, error) {
+func (r *deviceRepository) Update(ctx context.Context, tx *sql.Tx, device *domain.Device) (*domain.Device, error) {
 	rows, err := tx.QueryContext(ctx, `
 		UPDATE devices
 		SET mac_address = $1
@@ -114,7 +114,7 @@ func (r *deviceRepository) UpdateDevice(ctx context.Context, tx *sql.Tx, device 
 	return nil, sql.ErrNoRows
 }
 
-func (r *deviceRepository) DeleteDeviceByID(ctx context.Context, tx *sql.Tx, id int) error {
+func (r *deviceRepository) DeleteByID(ctx context.Context, tx *sql.Tx, id int) error {
 	_, err := tx.ExecContext(ctx, `
 		DELETE FROM devices
 		WHERE id = $1

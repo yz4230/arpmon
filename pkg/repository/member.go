@@ -8,16 +8,16 @@ import (
 )
 
 type MemberRepository interface {
-	CreateMember(ctx context.Context, tx *sql.Tx, member *domain.Member) (*domain.Member, error)
-	GetMemberByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Member, error)
-	ListMembers(ctx context.Context, tx *sql.Tx) ([]*domain.Member, error)
-	UpdateMember(ctx context.Context, tx *sql.Tx, member *domain.Member) (*domain.Member, error)
-	DeleteMemberByID(ctx context.Context, tx *sql.Tx, id int) error
+	Create(ctx context.Context, tx *sql.Tx, member *domain.Member) (*domain.Member, error)
+	GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Member, error)
+	List(ctx context.Context, tx *sql.Tx) ([]*domain.Member, error)
+	Update(ctx context.Context, tx *sql.Tx, member *domain.Member) (*domain.Member, error)
+	DeleteByID(ctx context.Context, tx *sql.Tx, id int) error
 }
 
 type memberRepository struct{}
 
-func (r *memberRepository) CreateMember(ctx context.Context, tx *sql.Tx, member *domain.Member) (*domain.Member, error) {
+func (r *memberRepository) Create(ctx context.Context, tx *sql.Tx, member *domain.Member) (*domain.Member, error) {
 	rows, err := tx.QueryContext(ctx, `
 		INSERT INTO members (name)
 		VALUES ($1)
@@ -40,7 +40,7 @@ func (r *memberRepository) CreateMember(ctx context.Context, tx *sql.Tx, member 
 	return nil, sql.ErrNoRows
 }
 
-func (r *memberRepository) GetMemberByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Member, error) {
+func (r *memberRepository) GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.Member, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, name, created_at, updated_at
 		FROM members
@@ -63,7 +63,7 @@ func (r *memberRepository) GetMemberByID(ctx context.Context, tx *sql.Tx, id int
 	return nil, sql.ErrNoRows
 }
 
-func (r *memberRepository) ListMembers(ctx context.Context, tx *sql.Tx) ([]*domain.Member, error) {
+func (r *memberRepository) List(ctx context.Context, tx *sql.Tx) ([]*domain.Member, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, name, created_at, updated_at
 		FROM members
@@ -90,7 +90,7 @@ func (r *memberRepository) ListMembers(ctx context.Context, tx *sql.Tx) ([]*doma
 	return members, nil
 }
 
-func (r *memberRepository) UpdateMember(ctx context.Context, tx *sql.Tx, member *domain.Member) (*domain.Member, error) {
+func (r *memberRepository) Update(ctx context.Context, tx *sql.Tx, member *domain.Member) (*domain.Member, error) {
 	rows, err := tx.QueryContext(ctx, `
 		UPDATE members
 		SET name = $1
@@ -114,7 +114,7 @@ func (r *memberRepository) UpdateMember(ctx context.Context, tx *sql.Tx, member 
 	return nil, sql.ErrNoRows
 }
 
-func (r *memberRepository) DeleteMemberByID(ctx context.Context, tx *sql.Tx, id int) error {
+func (r *memberRepository) DeleteByID(ctx context.Context, tx *sql.Tx, id int) error {
 	_, err := tx.ExecContext(ctx, `
 		DELETE FROM members
 		WHERE id = $1

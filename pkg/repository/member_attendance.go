@@ -8,16 +8,16 @@ import (
 )
 
 type MemberAttendanceRepository interface {
-	CreateMemberAttendance(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error)
-	GetMemberAttendanceByID(ctx context.Context, tx *sql.Tx, id int) (*domain.MemberAttendance, error)
-	ListMemberAttendances(ctx context.Context, tx *sql.Tx) ([]*domain.MemberAttendance, error)
-	UpdateMemberAttendance(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error)
-	DeleteMemberAttendanceByID(ctx context.Context, tx *sql.Tx, id int) error
+	Create(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error)
+	GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.MemberAttendance, error)
+	List(ctx context.Context, tx *sql.Tx) ([]*domain.MemberAttendance, error)
+	Update(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error)
+	DeleteByID(ctx context.Context, tx *sql.Tx, id int) error
 }
 
 type memberAttendanceRepository struct{}
 
-func (r *memberAttendanceRepository) CreateMemberAttendance(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error) {
+func (r *memberAttendanceRepository) Create(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error) {
 	rows, err := tx.QueryContext(ctx, `
 		INSERT INTO member_attendances (member_id, is_present)
 		VALUES ($1, $2)
@@ -40,7 +40,7 @@ func (r *memberAttendanceRepository) CreateMemberAttendance(ctx context.Context,
 	return nil, sql.ErrNoRows
 }
 
-func (r *memberAttendanceRepository) GetMemberAttendanceByID(ctx context.Context, tx *sql.Tx, id int) (*domain.MemberAttendance, error) {
+func (r *memberAttendanceRepository) GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.MemberAttendance, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, member_id, is_present, created_at, updated_at
 		FROM member_attendances
@@ -63,7 +63,7 @@ func (r *memberAttendanceRepository) GetMemberAttendanceByID(ctx context.Context
 	return nil, sql.ErrNoRows
 }
 
-func (r *memberAttendanceRepository) ListMemberAttendances(ctx context.Context, tx *sql.Tx) ([]*domain.MemberAttendance, error) {
+func (r *memberAttendanceRepository) List(ctx context.Context, tx *sql.Tx) ([]*domain.MemberAttendance, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, member_id, is_present, created_at, updated_at
 		FROM member_attendances
@@ -90,7 +90,7 @@ func (r *memberAttendanceRepository) ListMemberAttendances(ctx context.Context, 
 	return attendances, nil
 }
 
-func (r *memberAttendanceRepository) UpdateMemberAttendance(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error) {
+func (r *memberAttendanceRepository) Update(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error) {
 	rows, err := tx.QueryContext(ctx, `
 		UPDATE member_attendances
 		SET member_id = $1, is_present = $2
@@ -114,7 +114,7 @@ func (r *memberAttendanceRepository) UpdateMemberAttendance(ctx context.Context,
 	return nil, sql.ErrNoRows
 }
 
-func (r *memberAttendanceRepository) DeleteMemberAttendanceByID(ctx context.Context, tx *sql.Tx, id int) error {
+func (r *memberAttendanceRepository) DeleteByID(ctx context.Context, tx *sql.Tx, id int) error {
 	_, err := tx.ExecContext(ctx, `
 		DELETE FROM member_attendances
 		WHERE id = $1

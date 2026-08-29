@@ -25,9 +25,9 @@ func TestDeviceRepositoryCRUD(t *testing.T) {
 
 	// Create a new device
 	device := &domain.Device{MacAddress: "001122334455"}
-	created, err := repo.CreateDevice(context.Background(), tx, device)
+	created, err := repo.Create(context.Background(), tx, device)
 	if err != nil {
-		t.Fatalf("CreateDevice failed: %v", err)
+		t.Fatalf("Create failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, created)
@@ -36,9 +36,9 @@ func TestDeviceRepositoryCRUD(t *testing.T) {
 	}
 
 	// Get the device by ID
-	retrieved, err := repo.GetDeviceByID(context.Background(), tx, created.ID)
+	retrieved, err := repo.GetByID(context.Background(), tx, created.ID)
 	if err != nil {
-		t.Fatalf("GetDeviceByID failed: %v", err)
+		t.Fatalf("GetByID failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, retrieved)
@@ -59,27 +59,27 @@ func TestDeviceRepositoryCRUD(t *testing.T) {
 
 	// Update the device
 	retrieved.MacAddress = "aabbccddeeff"
-	updated, err := repo.UpdateDevice(context.Background(), tx, retrieved)
+	updated, err := repo.Update(context.Background(), tx, retrieved)
 	if err != nil {
-		t.Fatalf("UpdateDevice failed: %v", err)
+		t.Fatalf("Update failed: %v", err)
 	}
 	if updated.MacAddress != "aabbccddeeff" || !updated.UpdatedAt.After(updated.CreatedAt) {
 		t.Fatalf("Updated device does not match expected values")
 	}
 
 	// List devices
-	devices, err := repo.ListDevices(context.Background(), tx)
+	devices, err := repo.List(context.Background(), tx)
 	if err != nil {
-		t.Fatalf("ListDevices failed: %v", err)
+		t.Fatalf("List failed: %v", err)
 	}
 	if len(devices) != 1 || devices[0].ID != created.ID {
-		t.Fatalf("ListDevices returned unexpected results")
+		t.Fatalf("List returned unexpected results")
 	}
 
 	// Delete the device
-	err = repo.DeleteDeviceByID(context.Background(), tx, created.ID)
+	err = repo.DeleteByID(context.Background(), tx, created.ID)
 	if err != nil {
-		t.Fatalf("DeleteDeviceByID failed: %v", err)
+		t.Fatalf("DeleteByID failed: %v", err)
 	}
 
 	if err := tx.Commit(); err != nil {

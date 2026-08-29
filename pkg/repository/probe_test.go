@@ -27,30 +27,30 @@ func TestProbeRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	probe := &domain.Probe{Target: target}
-	created, err := repo.CreateProbe(context.Background(), tx, probe)
+	created, err := repo.Create(context.Background(), tx, probe)
 	if err != nil {
-		t.Fatalf("CreateProbe failed: %v", err)
+		t.Fatalf("Create failed: %v", err)
 	}
 	testutil.AssertAllFieldsNonZero(t, created)
 
-	retrieved, err := repo.GetProbeByID(context.Background(), tx, created.ID)
+	retrieved, err := repo.GetByID(context.Background(), tx, created.ID)
 	if err != nil {
-		t.Fatalf("GetProbeByID failed: %v", err)
+		t.Fatalf("GetByID failed: %v", err)
 	}
 	if retrieved.ID != created.ID || retrieved.Target.String() != probe.Target.String() {
 		t.Fatalf("Retrieved probe does not match created probe")
 	}
 
-	probes, err := repo.ListProbes(context.Background(), tx)
+	probes, err := repo.List(context.Background(), tx)
 	if err != nil {
-		t.Fatalf("ListProbes failed: %v", err)
+		t.Fatalf("List failed: %v", err)
 	}
 	if len(probes) != 1 || probes[0].ID != created.ID || probes[0].Target.String() != probe.Target.String() {
-		t.Fatalf("ListProbes returned unexpected results")
+		t.Fatalf("List returned unexpected results")
 	}
 
-	if err := repo.DeleteProbeByID(context.Background(), tx, created.ID); err != nil {
-		t.Fatalf("DeleteProbeByID failed: %v", err)
+	if err := repo.DeleteByID(context.Background(), tx, created.ID); err != nil {
+		t.Fatalf("DeleteByID failed: %v", err)
 	}
 
 	if err := tx.Commit(); err != nil {

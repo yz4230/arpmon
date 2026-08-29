@@ -22,18 +22,18 @@ func TestMemberAttendanceRepositoryCRUD(t *testing.T) {
 	}
 
 	memberRepo := NewMemberRepository()
-	member, err := memberRepo.CreateMember(context.Background(), tx, &domain.Member{Name: "John Doe"})
+	member, err := memberRepo.Create(context.Background(), tx, &domain.Member{Name: "John Doe"})
 	if err != nil {
-		t.Fatalf("CreateMember failed: %v", err)
+		t.Fatalf("Create failed: %v", err)
 	}
 
 	repo := NewMemberAttendanceRepository()
 
 	// Create a new member attendance
 	attendance := &domain.MemberAttendance{MemberID: member.ID, IsPresent: true}
-	created, err := repo.CreateMemberAttendance(context.Background(), tx, attendance)
+	created, err := repo.Create(context.Background(), tx, attendance)
 	if err != nil {
-		t.Fatalf("CreateMemberAttendance failed: %v", err)
+		t.Fatalf("Create failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, created)
@@ -42,9 +42,9 @@ func TestMemberAttendanceRepositoryCRUD(t *testing.T) {
 	}
 
 	// Get the member attendance by ID
-	retrieved, err := repo.GetMemberAttendanceByID(context.Background(), tx, created.ID)
+	retrieved, err := repo.GetByID(context.Background(), tx, created.ID)
 	if err != nil {
-		t.Fatalf("GetMemberAttendanceByID failed: %v", err)
+		t.Fatalf("GetByID failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, retrieved)
@@ -65,27 +65,27 @@ func TestMemberAttendanceRepositoryCRUD(t *testing.T) {
 
 	// Update the member attendance
 	retrieved.IsPresent = false
-	updated, err := repo.UpdateMemberAttendance(context.Background(), tx, retrieved)
+	updated, err := repo.Update(context.Background(), tx, retrieved)
 	if err != nil {
-		t.Fatalf("UpdateMemberAttendance failed: %v", err)
+		t.Fatalf("Update failed: %v", err)
 	}
 	if updated.MemberID != member.ID || updated.IsPresent || !updated.UpdatedAt.After(updated.CreatedAt) {
 		t.Fatalf("Updated member attendance does not match expected values")
 	}
 
 	// List member attendances
-	attendances, err := repo.ListMemberAttendances(context.Background(), tx)
+	attendances, err := repo.List(context.Background(), tx)
 	if err != nil {
-		t.Fatalf("ListMemberAttendances failed: %v", err)
+		t.Fatalf("List failed: %v", err)
 	}
 	if len(attendances) != 1 || attendances[0].ID != created.ID || attendances[0].IsPresent {
-		t.Fatalf("ListMemberAttendances returned unexpected results")
+		t.Fatalf("List returned unexpected results")
 	}
 
 	// Delete the member attendance
-	err = repo.DeleteMemberAttendanceByID(context.Background(), tx, created.ID)
+	err = repo.DeleteByID(context.Background(), tx, created.ID)
 	if err != nil {
-		t.Fatalf("DeleteMemberAttendanceByID failed: %v", err)
+		t.Fatalf("DeleteByID failed: %v", err)
 	}
 
 	if err := tx.Commit(); err != nil {
