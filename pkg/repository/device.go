@@ -22,7 +22,7 @@ func (r *deviceRepository) Create(ctx context.Context, tx *sql.Tx, device *domai
 		INSERT INTO devices (mac_address)
 		VALUES ($1)
 		RETURNING id, mac_address, created_at, updated_at
-	`, device.MacAddress)
+	`, device.MACAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (r *deviceRepository) Create(ctx context.Context, tx *sql.Tx, device *domai
 
 	if rows.Next() {
 		var d domain.Device
-		if err := rows.Scan(&d.ID, &d.MacAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.MACAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			return nil, err
 		}
 		return &d, nil
@@ -54,7 +54,7 @@ func (r *deviceRepository) GetByID(ctx context.Context, tx *sql.Tx, id int) (*do
 
 	if rows.Next() {
 		var d domain.Device
-		if err := rows.Scan(&d.ID, &d.MacAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.MACAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			return nil, err
 		}
 		return &d, nil
@@ -77,7 +77,7 @@ func (r *deviceRepository) List(ctx context.Context, tx *sql.Tx) ([]*domain.Devi
 	var devices []*domain.Device
 	for rows.Next() {
 		var d domain.Device
-		if err := rows.Scan(&d.ID, &d.MacAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.MACAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			return nil, err
 		}
 		devices = append(devices, &d)
@@ -96,7 +96,7 @@ func (r *deviceRepository) Update(ctx context.Context, tx *sql.Tx, device *domai
 		SET mac_address = $1
 		WHERE id = $2
 		RETURNING id, mac_address, created_at, updated_at
-	`, device.MacAddress, device.ID)
+	`, device.MACAddress, device.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (r *deviceRepository) Update(ctx context.Context, tx *sql.Tx, device *domai
 
 	if rows.Next() {
 		var d domain.Device
-		if err := rows.Scan(&d.ID, &d.MacAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.MACAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			return nil, err
 		}
 		return &d, nil

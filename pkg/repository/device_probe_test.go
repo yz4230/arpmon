@@ -23,11 +23,11 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 	}
 
 	deviceRepo := NewDeviceRepository()
-	firstDevice, err := deviceRepo.Create(context.Background(), tx, &domain.Device{MacAddress: "001122334455"})
+	firstDevice, err := deviceRepo.Create(context.Background(), tx, &domain.Device{MACAddress: "001122334455"})
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
-	secondDevice, err := deviceRepo.Create(context.Background(), tx, &domain.Device{MacAddress: "aabbccddeeff"})
+	secondDevice, err := deviceRepo.Create(context.Background(), tx, &domain.Device{MACAddress: "aabbccddeeff"})
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}

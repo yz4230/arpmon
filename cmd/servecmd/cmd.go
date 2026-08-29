@@ -13,6 +13,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/samber/do"
 	"github.com/spf13/cobra"
+	"github.com/yz4230/arpmon/pkg/arpscan"
 	"github.com/yz4230/arpmon/pkg/db"
 	"github.com/yz4230/arpmon/pkg/gateway"
 	"github.com/yz4230/arpmon/pkg/repository"
@@ -97,8 +98,10 @@ func injectDependencies(i *do.Injector) {
 		return db, err
 	})
 
+	do.ProvideValue(i, arpscan.NewARPScanner())
 	do.ProvideValue(i, repository.NewMemberRepository())
 	do.ProvideValue(i, repository.NewMemberAttendanceRepository())
+	do.ProvideValue(i, repository.NewProbeRepository())
 	do.ProvideValue(i, repository.NewDeviceRepository())
 	do.ProvideValue(i, repository.NewDeviceProbeRepository())
 }

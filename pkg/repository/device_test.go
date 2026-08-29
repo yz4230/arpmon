@@ -24,15 +24,15 @@ func TestDeviceRepositoryCRUD(t *testing.T) {
 	repo := NewDeviceRepository()
 
 	// Create a new device
-	device := &domain.Device{MacAddress: "001122334455"}
+	device := &domain.Device{MACAddress: "001122334455"}
 	created, err := repo.Create(context.Background(), tx, device)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, created)
-	if created.MacAddress != device.MacAddress {
-		t.Fatalf("Created device MAC address does not match: got %s, want %s", created.MacAddress, device.MacAddress)
+	if created.MACAddress != device.MACAddress {
+		t.Fatalf("Created device MAC address does not match: got %s, want %s", created.MACAddress, device.MACAddress)
 	}
 
 	// Get the device by ID
@@ -42,7 +42,7 @@ func TestDeviceRepositoryCRUD(t *testing.T) {
 	}
 
 	testutil.AssertAllFieldsNonZero(t, retrieved)
-	if retrieved.ID != created.ID || retrieved.MacAddress != created.MacAddress {
+	if retrieved.ID != created.ID || retrieved.MACAddress != created.MACAddress {
 		t.Fatalf("Retrieved device does not match created device")
 	}
 
@@ -58,12 +58,12 @@ func TestDeviceRepositoryCRUD(t *testing.T) {
 	}
 
 	// Update the device
-	retrieved.MacAddress = "aabbccddeeff"
+	retrieved.MACAddress = "aabbccddeeff"
 	updated, err := repo.Update(context.Background(), tx, retrieved)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
-	if updated.MacAddress != "aabbccddeeff" || !updated.UpdatedAt.After(updated.CreatedAt) {
+	if updated.MACAddress != "aabbccddeeff" || !updated.UpdatedAt.After(updated.CreatedAt) {
 		t.Fatalf("Updated device does not match expected values")
 	}
 
