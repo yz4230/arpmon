@@ -8,6 +8,7 @@ import (
 
 	"github.com/lmittmann/tint"
 	"github.com/spf13/cobra"
+	"github.com/yz4230/arpmon/cmd/migratedbcmd"
 	"github.com/yz4230/arpmon/cmd/pingdbcmd"
 	"github.com/yz4230/arpmon/cmd/scancmd"
 	"github.com/yz4230/arpmon/cmd/servecmd"
@@ -40,6 +41,7 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.AddCommand(migratedbcmd.MigrateDBCmd)
 	rootCmd.AddCommand(pingdbcmd.PingDBCmd)
 	rootCmd.AddCommand(scancmd.ScanCmd)
 	rootCmd.AddCommand(servecmd.ServeCmd)
