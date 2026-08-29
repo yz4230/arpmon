@@ -1,6 +1,7 @@
 package servecmd
 
 import (
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -9,7 +10,12 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
+	"github.com/lib/pq"
+	"github.com/samber/do"
 	"github.com/spf13/cobra"
+	"github.com/yz4230/arpmon/pkg/db"
+	"github.com/yz4230/arpmon/pkg/gateway"
+	"github.com/yz4230/arpmon/pkg/repository"
 )
 
 var ServeCmd = &cobra.Command{
@@ -49,6 +55,10 @@ var ServeCmd = &cobra.Command{
 			return c.String(http.StatusOK, "pong")
 		})
 
+		injector := do.New()
+		injectDependencies(injector)
+		gateway.RegisterHandlers(e, injector)
+
 		if err := e.Start(fmt.Sprintf(":%d", port)); err != nil {
 			slog.Error("Failed to start server", "error", err)
 		}
@@ -61,4 +71,34 @@ func serverPort() int {
 		return port
 	}
 	return 8080 // default port
+}
+
+func connectDatabase() (*sql.DB, error) {
+	config, err := db.LoadConfigFromEnv()
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := pq.NewConnectorConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	db := sql.OpenDB(c)
+	return db, nil
+}
+
+func injectDependencies(i *do.Injector) {
+	do.Provide(i, func(i *do.Injector) (*sql.DB, error) {
+		db, err := connectDatabase()
+		if err != nil {
+			slog.Error("Failed to connect to the database", "error", err)
+		}
+		return db, err
+	})
+
+	do.ProvideValue(i, repository.NewMemberRepository())
+	do.ProvideValue(i, repository.NewMemberAttendanceRepository())
+	do.ProvideValue(i, repository.NewDeviceRepository())
+	do.ProvideValue(i, repository.NewDeviceProbeRepository())
 }
