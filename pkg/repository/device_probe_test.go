@@ -96,6 +96,29 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 		t.Fatalf("ListDeviceProbes returned unexpected results")
 	}
 
+	// Create multiple device probes
+	createdMany, err := repo.CreateManyDeviceProbes(context.Background(), tx, []*domain.DeviceProbe{
+		{DeviceID: firstDevice.ID, ProbeID: parentProbe.ID},
+		{DeviceID: secondDevice.ID, ProbeID: parentProbe.ID},
+	})
+	if err != nil {
+		t.Fatalf("CreateManyDeviceProbes failed: %v", err)
+	}
+	if len(createdMany) != 2 {
+		t.Fatalf("CreateManyDeviceProbes returned %d device probes, want 2", len(createdMany))
+	}
+	for i, probe := range createdMany {
+		testutil.AssertAllFieldsNonZero(t, probe)
+		if probe.DeviceID != []int{firstDevice.ID, secondDevice.ID}[i] || probe.ProbeID != parentProbe.ID {
+			t.Fatalf("Created device probe does not match at index %d", i)
+		}
+	}
+
+	empty, err := repo.CreateManyDeviceProbes(context.Background(), tx, nil)
+	if err != nil || len(empty) != 0 {
+		t.Fatalf("CreateManyDeviceProbes with no probes returned %v, %v", empty, err)
+	}
+
 	// Delete the device probe
 	err = repo.DeleteDeviceProbeByID(context.Background(), tx, created.ID)
 	if err != nil {
