@@ -47,7 +47,7 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 		}
 
 		probeUseCase := do.MustInvoke[usecase.ProbeUseCase](i)
-		if err := probeUseCase.DoARPScan(c.Request().Context(), target); err != nil {
+		if err := probeUseCase.Do(c.Request().Context(), target); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run probe").Wrap(err)
 		}
 

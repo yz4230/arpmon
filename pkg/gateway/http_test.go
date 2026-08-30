@@ -20,7 +20,7 @@ type probeUseCaseStub struct {
 	err    error
 }
 
-func (s *probeUseCaseStub) DoARPScan(_ context.Context, target *net.IPNet) error {
+func (s *probeUseCaseStub) Do(_ context.Context, target *net.IPNet) error {
 	s.calls++
 	s.target = target
 	return s.err

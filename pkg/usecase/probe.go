@@ -12,7 +12,7 @@ import (
 )
 
 type ProbeUseCase interface {
-	DoARPScan(ctx context.Context, target *net.IPNet) error
+	Do(ctx context.Context, target *net.IPNet) error
 }
 
 type probeUseCase struct {
@@ -33,7 +33,7 @@ func NewProbeUseCase(i *do.Injector) ProbeUseCase {
 	}
 }
 
-func (p *probeUseCase) DoARPScan(ctx context.Context, target *net.IPNet) error {
+func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet) error {
 	entries, err := p.scanner.Scan(target)
 	if err != nil {
 		return err

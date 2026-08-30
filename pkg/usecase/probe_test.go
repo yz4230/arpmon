@@ -150,7 +150,7 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				deviceProbeRepository: deviceProbeRepository,
 			}
 
-			gotErr := uc.DoARPScan(context.Background(), target)
+			gotErr := uc.Do(context.Background(), target)
 			if !errors.Is(gotErr, tt.wantErr) {
 				t.Fatalf("DoARPScan() error = %v, want %v", gotErr, tt.wantErr)
 			}
