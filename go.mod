@@ -3,6 +3,7 @@ module github.com/yz4230/arpmon
 go 1.27
 
 require (
+	github.com/dustin/go-humanize v1.0.1
 	github.com/labstack/echo/v5 v5.3.1
 	github.com/lib/pq v1.12.3
 	github.com/lmittmann/tint v1.2.0

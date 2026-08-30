@@ -8,6 +8,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/labstack/echo/v5"
 )
 
@@ -19,7 +20,7 @@ type TemplateRenderer struct {
 }
 
 func formatDateTime(value time.Time) string {
-	return value.Format(time.DateTime)
+	return value.Format(time.DateTime) + " (" + humanize.Time(value) + ")"
 }
 
 func NewTemplateRenderer() *TemplateRenderer {
