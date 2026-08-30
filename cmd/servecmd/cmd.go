@@ -17,6 +17,7 @@ import (
 	"github.com/yz4230/arpmon/pkg/db"
 	"github.com/yz4230/arpmon/pkg/gateway"
 	"github.com/yz4230/arpmon/pkg/repository"
+	"github.com/yz4230/arpmon/pkg/usecase"
 )
 
 var ServeCmd = &cobra.Command{
@@ -104,4 +105,7 @@ func injectDependencies(i *do.Injector) {
 	do.ProvideValue(i, repository.NewProbeRepository())
 	do.ProvideValue(i, repository.NewDeviceRepository())
 	do.ProvideValue(i, repository.NewDeviceProbeRepository())
+	do.Provide(i, func(i *do.Injector) (usecase.ProbeUseCase, error) {
+		return usecase.NewProbeUseCase(i), nil
+	})
 }

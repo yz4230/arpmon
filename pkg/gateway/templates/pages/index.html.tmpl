@@ -2,7 +2,12 @@
 <div class="container py-4">
   <div class="d-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0">Probes</h1>
-    <span class="badge text-bg-secondary">{{ len .Probes }}</span>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge text-bg-secondary">{{ len .Probes }}</span>
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newProbeModal">
+        New probe
+      </button>
+    </div>
   </div>
 
   <div class="table-responsive">
@@ -30,6 +35,33 @@
         {{ end }}
       </tbody>
     </table>
+  </div>
+
+  <div class="modal fade" id="newProbeModal" tabindex="-1" aria-labelledby="newProbeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form class="probe-form" action="/probes" method="post" hx-post="/probes" hx-target="#probe-feedback" hx-swap="innerHTML" hx-disable="find button[type='submit']" hx-status:4xx="target:#probe-feedback" hx-status:5xx="target:#probe-feedback">
+          <div class="modal-header">
+            <h2 class="modal-title fs-5" id="newProbeModalLabel">Run a new probe</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="probe-feedback" class="text-danger small mb-3" aria-live="polite"></div>
+            <div>
+              <label class="form-label" for="probe-target">Target network</label>
+              <input class="form-control" id="probe-target" name="target" type="text" value="192.168.1.0/24" placeholder="192.168.1.0/24" required aria-describedby="probe-target-help">
+              <div class="form-text" id="probe-target-help">Enter the network to scan in CIDR notation.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary probe-submit">
+              Run probe
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </div>
 {{ end }}

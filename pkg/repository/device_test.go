@@ -24,7 +24,7 @@ func TestDeviceRepositoryCRUD(t *testing.T) {
 	repo := NewDeviceRepository()
 
 	// Create a new device
-	device := &domain.Device{MACAddress: "001122334455"}
+	device := &domain.Device{MACAddress: "00:11:22:33:44:55"}
 	created, err := repo.Create(context.Background(), tx, device)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
@@ -58,12 +58,12 @@ func TestDeviceRepositoryCRUD(t *testing.T) {
 	}
 
 	// Update the device
-	retrieved.MACAddress = "aabbccddeeff"
+	retrieved.MACAddress = "aa:bb:cc:dd:ee:ff"
 	updated, err := repo.Update(context.Background(), tx, retrieved)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
-	if updated.MACAddress != "aabbccddeeff" || !updated.UpdatedAt.After(updated.CreatedAt) {
+	if updated.MACAddress != "aa:bb:cc:dd:ee:ff" || !updated.UpdatedAt.After(updated.CreatedAt) {
 		t.Fatalf("Updated device does not match expected values")
 	}
 
