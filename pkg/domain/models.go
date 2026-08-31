@@ -20,6 +20,7 @@ type MemberAttendance struct {
 	Timestamp
 	ID        int
 	MemberID  int
+	ProbeID   int
 	IsPresent bool
 }
 
@@ -37,7 +38,8 @@ type Probe struct {
 
 type DeviceProbe struct {
 	Timestamp
-	ID       int
-	DeviceID int
-	ProbeID  int
+	ID        int
+	DeviceID  int
+	ProbeID   int
+	IsPresent bool
 }

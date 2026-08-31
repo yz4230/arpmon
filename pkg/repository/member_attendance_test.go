@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"net"
 	"testing"
 	"time"
 
@@ -27,17 +28,27 @@ func TestMemberAttendanceRepositoryCRUD(t *testing.T) {
 		t.Fatalf("Create failed: %v", err)
 	}
 
+	probeRepo := NewProbeRepository()
+	_, target, err := net.ParseCIDR("192.168.1.0/24")
+	if err != nil {
+		t.Fatal(err)
+	}
+	probe, err := probeRepo.Create(context.Background(), tx, &domain.Probe{Target: target})
+	if err != nil {
+		t.Fatalf("Create probe failed: %v", err)
+	}
+
 	repo := NewMemberAttendanceRepository()
 
 	// Create a new member attendance
-	attendance := &domain.MemberAttendance{MemberID: member.ID, IsPresent: true}
+	attendance := &domain.MemberAttendance{MemberID: member.ID, ProbeID: probe.ID, IsPresent: true}
 	created, err := repo.Create(context.Background(), tx, attendance)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, created)
-	if created.MemberID != attendance.MemberID || created.IsPresent != attendance.IsPresent {
+	if created.MemberID != attendance.MemberID || created.ProbeID != attendance.ProbeID || created.IsPresent != attendance.IsPresent {
 		t.Fatalf("Created member attendance does not match")
 	}
 
@@ -48,7 +59,7 @@ func TestMemberAttendanceRepositoryCRUD(t *testing.T) {
 	}
 
 	testutil.AssertAllFieldsNonZero(t, retrieved)
-	if retrieved.ID != created.ID || retrieved.MemberID != created.MemberID || retrieved.IsPresent != created.IsPresent {
+	if retrieved.ID != created.ID || retrieved.MemberID != created.MemberID || retrieved.ProbeID != created.ProbeID || retrieved.IsPresent != created.IsPresent {
 		t.Fatalf("Retrieved member attendance does not match created member attendance")
 	}
 
@@ -69,7 +80,7 @@ func TestMemberAttendanceRepositoryCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
-	if updated.MemberID != member.ID || updated.IsPresent || !updated.UpdatedAt.After(updated.CreatedAt) {
+	if updated.MemberID != member.ID || updated.ProbeID != probe.ID || updated.IsPresent || !updated.UpdatedAt.After(updated.CreatedAt) {
 		t.Fatalf("Updated member attendance does not match expected values")
 	}
 
@@ -78,7 +89,7 @@ func TestMemberAttendanceRepositoryCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
-	if len(attendances) != 1 || attendances[0].ID != created.ID || attendances[0].IsPresent {
+	if len(attendances) != 1 || attendances[0].ID != created.ID || attendances[0].ProbeID != probe.ID || attendances[0].IsPresent {
 		t.Fatalf("List returned unexpected results")
 	}
 

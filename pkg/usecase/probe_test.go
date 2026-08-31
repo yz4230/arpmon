@@ -47,8 +47,9 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				MACAddress: existingMAC.String(),
 			}},
 			wantDeviceProbes: []wantDeviceProbe{{
-				deviceID: 42,
-				probeID:  1,
+				deviceID:  42,
+				probeID:   1,
+				isPresent: true,
 			}},
 			wantCreateManyCalls: 1,
 			wantBeginCount:      1,
@@ -65,8 +66,9 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				mac: newMAC.String(),
 			}},
 			wantDeviceProbes: []wantDeviceProbe{{
-				deviceID: 1,
-				probeID:  1,
+				deviceID:  1,
+				probeID:   1,
+				isPresent: true,
 			}},
 			wantCreateManyCalls: 1,
 			wantBeginCount:      1,
@@ -87,8 +89,8 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				mac: newMAC.String(),
 			}},
 			wantDeviceProbes: []wantDeviceProbe{
-				{deviceID: 42, probeID: 1},
-				{deviceID: 43, probeID: 1},
+				{deviceID: 42, probeID: 1, isPresent: true},
+				{deviceID: 43, probeID: 1, isPresent: true},
 			},
 			wantCreateManyCalls: 1,
 			wantBeginCount:      1,
@@ -122,8 +124,9 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			createManyErr: createManyErr,
 			wantErr:       createManyErr,
 			wantDeviceProbes: []wantDeviceProbe{{
-				deviceID: 42,
-				probeID:  1,
+				deviceID:  42,
+				probeID:   1,
+				isPresent: true,
 			}},
 			wantCreateManyCalls: 1,
 			wantBeginCount:      1,
@@ -193,8 +196,9 @@ type wantDevice struct {
 }
 
 type wantDeviceProbe struct {
-	deviceID int
-	probeID  int
+	deviceID  int
+	probeID   int
+	isPresent bool
 }
 
 func mustParseMAC(t *testing.T, value string) net.HardwareAddr {
@@ -227,8 +231,8 @@ func assertDeviceProbes(t *testing.T, got []*domain.DeviceProbe, want []wantDevi
 		t.Fatalf("created device probes = %d, want %d", len(got), len(want))
 	}
 	for i, wantProbe := range want {
-		if got[i].DeviceID != wantProbe.deviceID || got[i].ProbeID != wantProbe.probeID {
-			t.Errorf("created device probe %d = %#v, want device ID %d and probe ID %d", i, got[i], wantProbe.deviceID, wantProbe.probeID)
+		if got[i].DeviceID != wantProbe.deviceID || got[i].ProbeID != wantProbe.probeID || got[i].IsPresent != wantProbe.isPresent {
+			t.Errorf("created device probe %d = %#v, want device ID %d, probe ID %d, and is_present %t", i, got[i], wantProbe.deviceID, wantProbe.probeID, wantProbe.isPresent)
 		}
 	}
 }

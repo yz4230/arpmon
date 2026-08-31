@@ -71,8 +71,9 @@ func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet) error {
 		}
 
 		deviceProbes = append(deviceProbes, &domain.DeviceProbe{
-			ProbeID:  probe.ID,
-			DeviceID: device.ID,
+			ProbeID:   probe.ID,
+			DeviceID:  device.ID,
+			IsPresent: true,
 		})
 	}
 

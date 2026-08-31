@@ -44,14 +44,14 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 	repo := NewDeviceProbeRepository()
 
 	// Create a new device probe
-	probe := &domain.DeviceProbe{DeviceID: firstDevice.ID, ProbeID: parentProbe.ID}
+	probe := &domain.DeviceProbe{DeviceID: firstDevice.ID, ProbeID: parentProbe.ID, IsPresent: true}
 	created, err := repo.Create(context.Background(), tx, probe)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, created)
-	if created.DeviceID != probe.DeviceID || created.ProbeID != probe.ProbeID {
+	if created.DeviceID != probe.DeviceID || created.ProbeID != probe.ProbeID || created.IsPresent != probe.IsPresent {
 		t.Fatalf("Created device probe does not match")
 	}
 
@@ -79,11 +79,12 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 
 	// Update the device probe
 	retrieved.DeviceID = secondDevice.ID
+	retrieved.IsPresent = false
 	updated, err := repo.Update(context.Background(), tx, retrieved)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
-	if updated.DeviceID != secondDevice.ID || !updated.UpdatedAt.After(updated.CreatedAt) {
+	if updated.DeviceID != secondDevice.ID || updated.IsPresent || !updated.UpdatedAt.After(updated.CreatedAt) {
 		t.Fatalf("Updated device probe does not match expected values")
 	}
 
@@ -92,14 +93,14 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
-	if len(probes) != 1 || probes[0].ID != created.ID || probes[0].DeviceID != secondDevice.ID || probes[0].ProbeID != parentProbe.ID {
+	if len(probes) != 1 || probes[0].ID != created.ID || probes[0].DeviceID != secondDevice.ID || probes[0].ProbeID != parentProbe.ID || probes[0].IsPresent {
 		t.Fatalf("List returned unexpected results")
 	}
 
 	// Create multiple device probes
 	createdMany, err := repo.CreateMany(context.Background(), tx, []*domain.DeviceProbe{
-		{DeviceID: firstDevice.ID, ProbeID: parentProbe.ID},
-		{DeviceID: secondDevice.ID, ProbeID: parentProbe.ID},
+		{DeviceID: firstDevice.ID, ProbeID: parentProbe.ID, IsPresent: true},
+		{DeviceID: secondDevice.ID, ProbeID: parentProbe.ID, IsPresent: true},
 	})
 	if err != nil {
 		t.Fatalf("CreateMany failed: %v", err)
@@ -109,7 +110,7 @@ func TestDeviceProbeRepositoryCRUD(t *testing.T) {
 	}
 	for i, probe := range createdMany {
 		testutil.AssertAllFieldsNonZero(t, probe)
-		if probe.DeviceID != []int{firstDevice.ID, secondDevice.ID}[i] || probe.ProbeID != parentProbe.ID {
+		if probe.DeviceID != []int{firstDevice.ID, secondDevice.ID}[i] || probe.ProbeID != parentProbe.ID || !probe.IsPresent {
 			t.Fatalf("Created device probe does not match at index %d", i)
 		}
 	}

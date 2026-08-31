@@ -19,10 +19,10 @@ type memberAttendanceRepository struct{}
 
 func (r *memberAttendanceRepository) Create(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error) {
 	rows, err := tx.QueryContext(ctx, `
-		INSERT INTO member_attendances (member_id, is_present)
-		VALUES ($1, $2)
-		RETURNING id, member_id, is_present, created_at, updated_at
-	`, attendance.MemberID, attendance.IsPresent)
+		INSERT INTO member_attendances (member_id, probe_id, is_present)
+		VALUES ($1, $2, $3)
+		RETURNING id, member_id, probe_id, is_present, created_at, updated_at
+	`, attendance.MemberID, attendance.ProbeID, attendance.IsPresent)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (r *memberAttendanceRepository) Create(ctx context.Context, tx *sql.Tx, att
 
 	if rows.Next() {
 		var a domain.MemberAttendance
-		if err := rows.Scan(&a.ID, &a.MemberID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.MemberID, &a.ProbeID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return nil, err
 		}
 		return &a, nil
@@ -42,7 +42,7 @@ func (r *memberAttendanceRepository) Create(ctx context.Context, tx *sql.Tx, att
 
 func (r *memberAttendanceRepository) GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.MemberAttendance, error) {
 	rows, err := tx.QueryContext(ctx, `
-		SELECT id, member_id, is_present, created_at, updated_at
+		SELECT id, member_id, probe_id, is_present, created_at, updated_at
 		FROM member_attendances
 		WHERE id = $1
 	`, id)
@@ -54,7 +54,7 @@ func (r *memberAttendanceRepository) GetByID(ctx context.Context, tx *sql.Tx, id
 
 	if rows.Next() {
 		var a domain.MemberAttendance
-		if err := rows.Scan(&a.ID, &a.MemberID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.MemberID, &a.ProbeID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return nil, err
 		}
 		return &a, nil
@@ -65,7 +65,7 @@ func (r *memberAttendanceRepository) GetByID(ctx context.Context, tx *sql.Tx, id
 
 func (r *memberAttendanceRepository) List(ctx context.Context, tx *sql.Tx) ([]*domain.MemberAttendance, error) {
 	rows, err := tx.QueryContext(ctx, `
-		SELECT id, member_id, is_present, created_at, updated_at
+		SELECT id, member_id, probe_id, is_present, created_at, updated_at
 		FROM member_attendances
 	`)
 	if err != nil {
@@ -77,7 +77,7 @@ func (r *memberAttendanceRepository) List(ctx context.Context, tx *sql.Tx) ([]*d
 	var attendances []*domain.MemberAttendance
 	for rows.Next() {
 		var a domain.MemberAttendance
-		if err := rows.Scan(&a.ID, &a.MemberID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.MemberID, &a.ProbeID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return nil, err
 		}
 		attendances = append(attendances, &a)
@@ -93,10 +93,10 @@ func (r *memberAttendanceRepository) List(ctx context.Context, tx *sql.Tx) ([]*d
 func (r *memberAttendanceRepository) Update(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error) {
 	rows, err := tx.QueryContext(ctx, `
 		UPDATE member_attendances
-		SET member_id = $1, is_present = $2
-		WHERE id = $3
-		RETURNING id, member_id, is_present, created_at, updated_at
-	`, attendance.MemberID, attendance.IsPresent, attendance.ID)
+		SET member_id = $1, probe_id = $2, is_present = $3
+		WHERE id = $4
+		RETURNING id, member_id, probe_id, is_present, created_at, updated_at
+	`, attendance.MemberID, attendance.ProbeID, attendance.IsPresent, attendance.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (r *memberAttendanceRepository) Update(ctx context.Context, tx *sql.Tx, att
 
 	if rows.Next() {
 		var a domain.MemberAttendance
-		if err := rows.Scan(&a.ID, &a.MemberID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.MemberID, &a.ProbeID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return nil, err
 		}
 		return &a, nil

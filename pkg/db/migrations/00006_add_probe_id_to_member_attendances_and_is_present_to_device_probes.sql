@@ -1,0 +1,5 @@
+ALTER TABLE member_attendances
+ADD COLUMN probe_id INT REFERENCES probes(id) ON DELETE CASCADE;
+
+ALTER TABLE device_probes
+ADD COLUMN is_present BOOLEAN NOT NULL DEFAULT FALSE;
