@@ -1,2 +1,0 @@
-ALTER TABLE member_attendances
-ADD COLUMN is_present BOOLEAN NOT NULL DEFAULT FALSE;
