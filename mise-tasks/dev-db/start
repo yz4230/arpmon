@@ -3,6 +3,7 @@ set -euxo pipefail
 
 docker run -d --rm \
   --name arpmon-dev-db \
+  -v "$PWD/.postgres-data.local:/var/lib/postgresql" \
   -e POSTGRES_USER="$DB_USER" \
   -e POSTGRES_PASSWORD="$DB_PASSWORD" \
   -e POSTGRES_DB="$DB_NAME" \
