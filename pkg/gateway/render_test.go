@@ -28,7 +28,7 @@ func TestFormatDateTimeIncludesAbsoluteAndRelativeTime(t *testing.T) {
 	}
 }
 
-func TestIndexTemplateIncludesMemberAttendanceChecklist(t *testing.T) {
+func TestIndexTemplateIncludesMemberAttendanceChoices(t *testing.T) {
 	var rendered bytes.Buffer
 	err := NewTemplateRenderer().ExecuteTemplate(&rendered, "index", map[string]any{
 		"Title":  "ARP Monitor",
@@ -42,7 +42,14 @@ func TestIndexTemplateIncludesMemberAttendanceChecklist(t *testing.T) {
 	}
 
 	body := rendered.String()
-	for _, want := range []string{"Alice", `name="member_ids" value="1"`, `name="present_member_ids"`, "Who is present?"} {
+	for _, want := range []string{
+		"Alice",
+		`name="member_ids" value="1"`,
+		`name="member_presence_1"`,
+		`type="radio"`,
+		"Present",
+		"Not Present",
+	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("rendered index is missing %q", want)
 		}

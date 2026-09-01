@@ -111,6 +111,34 @@ func TestRunProbePassesMemberAttendance(t *testing.T) {
 	}
 }
 
+func TestRunProbePassesMemberPresenceChoices(t *testing.T) {
+	probeUseCase := &probeUseCaseStub{}
+	e := newGatewayWithProbeUseCase(t, probeUseCase)
+	form := url.Values{
+		"target":            {"192.168.1.0/24"},
+		"member_ids":        {"1", "2"},
+		"member_presence_1": {"not_present"},
+		"member_presence_2": {"present"},
+	}
+	req := newProbeRequestWithForm(form)
+	recorder := httptest.NewRecorder()
+
+	e.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusSeeOther)
+	}
+	if len(probeUseCase.members) != 2 {
+		t.Fatalf("members = %d, want 2", len(probeUseCase.members))
+	}
+	if got := probeUseCase.members[0]; got.MemberID != 1 || got.IsPresent {
+		t.Fatalf("first attendance = %#v, want member 1 absent", got)
+	}
+	if got := probeUseCase.members[1]; got.MemberID != 2 || !got.IsPresent {
+		t.Fatalf("second attendance = %#v, want member 2 present", got)
+	}
+}
+
 func TestRunProbeRejectsInvalidMemberID(t *testing.T) {
 	probeUseCase := &probeUseCaseStub{}
 	e := newGatewayWithProbeUseCase(t, probeUseCase)

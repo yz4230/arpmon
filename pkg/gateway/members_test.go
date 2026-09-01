@@ -157,3 +157,26 @@ func TestMemberAttendancesFromRequest(t *testing.T) {
 		t.Fatalf("second attendance = %#v, want member 2 present", got[1])
 	}
 }
+
+func TestMemberAttendancesFromRequestParsesPresenceChoices(t *testing.T) {
+	form := url.Values{
+		"member_ids":        {"1", "2"},
+		"member_presence_1": {"Not Present"},
+		"member_presence_2": {"Present"},
+	}
+	r := formRequest(http.MethodPost, "/probes", form)
+
+	got, err := memberAttendancesFromRequest(r)
+	if err != nil {
+		t.Fatalf("memberAttendancesFromRequest() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("memberAttendancesFromRequest() returned %d attendances, want 2", len(got))
+	}
+	if got[0].MemberID != 1 || got[0].IsPresent {
+		t.Fatalf("first attendance = %#v, want member 1 absent", got[0])
+	}
+	if got[1].MemberID != 2 || !got[1].IsPresent {
+		t.Fatalf("second attendance = %#v, want member 2 present", got[1])
+	}
+}

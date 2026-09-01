@@ -54,16 +54,23 @@
               <div class="form-text" id="probe-target-help">Enter the network to scan in CIDR notation.</div>
             </div>
             <fieldset class="mt-4">
-              <legend class="form-label mb-1">Who is present?</legend>
-              <p class="form-text mb-2">Check everyone who is currently in the room. This attendance snapshot is saved with the probe.</p>
+              <legend class="form-label mb-1">Member attendance</legend>
+              <p class="form-text mb-2">Choose Present or Not Present for each member. This attendance snapshot is saved with the probe.</p>
               {{ if .Members }}
               <div class="list-group">
                 {{ range .Members }}
-                <label class="list-group-item d-flex align-items-center gap-2" for="present-member-{{ .ID }}">
+                <div class="list-group-item">
                   <input type="hidden" name="member_ids" value="{{ .ID }}">
-                  <input class="form-check-input flex-shrink-0" id="present-member-{{ .ID }}" name="present_member_ids" type="checkbox" value="{{ .ID }}">
-                  <span>{{ .Name }}</span>
-                </label>
+                  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <span id="member-{{ .ID }}-name">{{ .Name }}</span>
+                    <div class="btn-group" role="group" aria-labelledby="member-{{ .ID }}-name">
+                      <input class="btn-check" id="member-{{ .ID }}-present" name="member_presence_{{ .ID }}" type="radio" value="present" autocomplete="off">
+                      <label class="btn btn-outline-success" for="member-{{ .ID }}-present">Present</label>
+                      <input class="btn-check" id="member-{{ .ID }}-not-present" name="member_presence_{{ .ID }}" type="radio" value="not_present" autocomplete="off" checked>
+                      <label class="btn btn-outline-secondary" for="member-{{ .ID }}-not-present">Not Present</label>
+                    </div>
+                  </div>
+                </div>
                 {{ end }}
               </div>
               {{ else }}

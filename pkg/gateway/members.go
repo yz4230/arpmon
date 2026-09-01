@@ -152,6 +152,10 @@ func memberAttendancesFromRequest(r *http.Request) ([]*domain.MemberAttendance, 
 	if err != nil {
 		return nil, err
 	}
+	presenceByMemberID, err := parseMemberPresence(r.Form)
+	if err != nil {
+		return nil, err
+	}
 	if len(memberIDs) == 0 {
 		memberIDs = presentMemberIDs
 	}
@@ -168,9 +172,13 @@ func memberAttendancesFromRequest(r *http.Request) ([]*domain.MemberAttendance, 
 			continue
 		}
 		seen[id] = struct{}{}
+		isPresent := present[id]
+		if selected, ok := presenceByMemberID[id]; ok {
+			isPresent = selected
+		}
 		attendances = append(attendances, &domain.MemberAttendance{
 			MemberID:  id,
-			IsPresent: present[id],
+			IsPresent: isPresent,
 		})
 	}
 
@@ -187,4 +195,34 @@ func parseMemberIDs(values []string) ([]int, error) {
 		ids = append(ids, id)
 	}
 	return ids, nil
+}
+
+func parseMemberPresence(values map[string][]string) (map[int]bool, error) {
+	const prefix = "member_presence_"
+
+	presenceByMemberID := make(map[int]bool)
+	for key, rawValues := range values {
+		if !strings.HasPrefix(key, prefix) {
+			continue
+		}
+
+		id, err := strconv.Atoi(strings.TrimPrefix(key, prefix))
+		if err != nil || id <= 0 {
+			return nil, fmt.Errorf("invalid member id in presence selection %q", key)
+		}
+		if len(rawValues) != 1 {
+			return nil, fmt.Errorf("member presence selection for %d must contain one value", id)
+		}
+
+		switch strings.ToLower(strings.TrimSpace(rawValues[0])) {
+		case "present", "true", "1":
+			presenceByMemberID[id] = true
+		case "not present", "not_present", "false", "0":
+			presenceByMemberID[id] = false
+		default:
+			return nil, fmt.Errorf("invalid presence selection for member %d", id)
+		}
+	}
+
+	return presenceByMemberID, nil
 }
