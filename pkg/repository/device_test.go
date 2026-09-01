@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"bytes"
 	"context"
+	"net"
 	"testing"
 	"time"
 
@@ -24,15 +26,15 @@ func TestDeviceRepositoryCRUD(t *testing.T) {
 	repo := NewDeviceRepository()
 
 	// Create a new device
-	device := &domain.Device{MACAddress: "00:11:22:33:44:55"}
+	device := &domain.Device{MACAddress: mustParseMAC(t, "00:11:22:33:44:55")}
 	created, err := repo.Create(context.Background(), tx, device)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
 
 	testutil.AssertAllFieldsNonZero(t, created)
-	if created.MACAddress != device.MACAddress {
-		t.Fatalf("Created device MAC address does not match: got %s, want %s", created.MACAddress, device.MACAddress)
+	if !bytes.Equal(created.MACAddress, device.MACAddress) {
+		t.Fatalf("Created device MAC address does not match: got %s, want %s", created.MACAddress.String(), device.MACAddress.String())
 	}
 
 	// Get the device by ID
@@ -42,7 +44,7 @@ func TestDeviceRepositoryCRUD(t *testing.T) {
 	}
 
 	testutil.AssertAllFieldsNonZero(t, retrieved)
-	if retrieved.ID != created.ID || retrieved.MACAddress != created.MACAddress {
+	if retrieved.ID != created.ID || !bytes.Equal(retrieved.MACAddress, created.MACAddress) {
 		t.Fatalf("Retrieved device does not match created device")
 	}
 
@@ -58,12 +60,12 @@ func TestDeviceRepositoryCRUD(t *testing.T) {
 	}
 
 	// Update the device
-	retrieved.MACAddress = "aa:bb:cc:dd:ee:ff"
+	retrieved.MACAddress = mustParseMAC(t, "aa:bb:cc:dd:ee:ff")
 	updated, err := repo.Update(context.Background(), tx, retrieved)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
-	if updated.MACAddress != "aa:bb:cc:dd:ee:ff" || !updated.UpdatedAt.After(updated.CreatedAt) {
+	if updated.MACAddress.String() != "aa:bb:cc:dd:ee:ff" || !updated.UpdatedAt.After(updated.CreatedAt) {
 		t.Fatalf("Updated device does not match expected values")
 	}
 
@@ -100,8 +102,8 @@ func TestDeviceRepositoryCreateMany(t *testing.T) {
 	}
 
 	devices := []*domain.Device{
-		{MACAddress: "00:11:22:33:44:55"},
-		{MACAddress: "aa:bb:cc:dd:ee:ff"},
+		{MACAddress: mustParseMAC(t, "00:11:22:33:44:55")},
+		{MACAddress: mustParseMAC(t, "aa:bb:cc:dd:ee:ff")},
 	}
 	created, err := NewDeviceRepository().CreateMany(context.Background(), tx, devices)
 	if err != nil {
@@ -113,8 +115,8 @@ func TestDeviceRepositoryCreateMany(t *testing.T) {
 	}
 	for i, device := range created {
 		testutil.AssertAllFieldsNonZero(t, device)
-		if device.MACAddress != devices[i].MACAddress {
-			t.Fatalf("created device at index %d has MAC address %q, want %q", i, device.MACAddress, devices[i].MACAddress)
+		if !bytes.Equal(device.MACAddress, devices[i].MACAddress) {
+			t.Fatalf("created device at index %d has MAC address %q, want %q", i, device.MACAddress.String(), devices[i].MACAddress.String())
 		}
 	}
 
@@ -126,4 +128,14 @@ func TestDeviceRepositoryCreateMany(t *testing.T) {
 	if err := tx.Commit(); err != nil {
 		t.Fatalf("Transaction commit failed: %v", err)
 	}
+}
+
+func mustParseMAC(t *testing.T, value string) net.HardwareAddr {
+	t.Helper()
+
+	mac, err := net.ParseMAC(value)
+	if err != nil {
+		t.Fatalf("net.ParseMAC(%q): %v", value, err)
+	}
+	return mac
 }

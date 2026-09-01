@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/yz4230/arpmon/pkg/domain"
@@ -25,7 +26,7 @@ func (r *deviceRepository) Create(ctx context.Context, tx *sql.Tx, device *domai
 		INSERT INTO devices (mac_address)
 		VALUES ($1)
 		RETURNING id, mac_address, created_at, updated_at
-	`, device.MACAddress)
+	`, device.MACAddress.String())
 	if err != nil {
 		return nil, err
 	}
@@ -33,11 +34,7 @@ func (r *deviceRepository) Create(ctx context.Context, tx *sql.Tx, device *domai
 	defer rows.Close()
 
 	if rows.Next() {
-		var d domain.Device
-		if err := rows.Scan(&d.ID, &d.MACAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
-			return nil, err
-		}
-		return &d, nil
+		return scanDevice(rows)
 	}
 
 	return nil, sql.ErrNoRows
@@ -52,7 +49,7 @@ func (r *deviceRepository) CreateMany(ctx context.Context, tx *sql.Tx, devices [
 	args := make([]any, 0, len(devices))
 	for i, device := range devices {
 		values[i] = fmt.Sprintf("($%d)", i+1)
-		args = append(args, device.MACAddress)
+		args = append(args, device.MACAddress.String())
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -67,11 +64,11 @@ func (r *deviceRepository) CreateMany(ctx context.Context, tx *sql.Tx, devices [
 
 	created := make([]*domain.Device, 0, len(devices))
 	for rows.Next() {
-		var device domain.Device
-		if err := rows.Scan(&device.ID, &device.MACAddress, &device.CreatedAt, &device.UpdatedAt); err != nil {
+		device, err := scanDevice(rows)
+		if err != nil {
 			return nil, err
 		}
-		created = append(created, &device)
+		created = append(created, device)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -94,11 +91,7 @@ func (r *deviceRepository) GetByID(ctx context.Context, tx *sql.Tx, id int) (*do
 	defer rows.Close()
 
 	if rows.Next() {
-		var d domain.Device
-		if err := rows.Scan(&d.ID, &d.MACAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
-			return nil, err
-		}
-		return &d, nil
+		return scanDevice(rows)
 	}
 
 	return nil, sql.ErrNoRows
@@ -117,11 +110,11 @@ func (r *deviceRepository) List(ctx context.Context, tx *sql.Tx) ([]*domain.Devi
 
 	var devices []*domain.Device
 	for rows.Next() {
-		var d domain.Device
-		if err := rows.Scan(&d.ID, &d.MACAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
+		d, err := scanDevice(rows)
+		if err != nil {
 			return nil, err
 		}
-		devices = append(devices, &d)
+		devices = append(devices, d)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -137,7 +130,7 @@ func (r *deviceRepository) Update(ctx context.Context, tx *sql.Tx, device *domai
 		SET mac_address = $1
 		WHERE id = $2
 		RETURNING id, mac_address, created_at, updated_at
-	`, device.MACAddress, device.ID)
+	`, device.MACAddress.String(), device.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -145,11 +138,7 @@ func (r *deviceRepository) Update(ctx context.Context, tx *sql.Tx, device *domai
 	defer rows.Close()
 
 	if rows.Next() {
-		var d domain.Device
-		if err := rows.Scan(&d.ID, &d.MACAddress, &d.CreatedAt, &d.UpdatedAt); err != nil {
-			return nil, err
-		}
-		return &d, nil
+		return scanDevice(rows)
 	}
 
 	return nil, sql.ErrNoRows
@@ -161,6 +150,26 @@ func (r *deviceRepository) DeleteByID(ctx context.Context, tx *sql.Tx, id int) e
 		WHERE id = $1
 	`, id)
 	return err
+}
+
+type rowScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanDevice(rows rowScanner) (*domain.Device, error) {
+	var device domain.Device
+	var macAddress string
+	if err := rows.Scan(&device.ID, &macAddress, &device.CreatedAt, &device.UpdatedAt); err != nil {
+		return nil, err
+	}
+
+	var err error
+	device.MACAddress, err = net.ParseMAC(macAddress)
+	if err != nil {
+		return nil, fmt.Errorf("parse MAC address %q: %w", macAddress, err)
+	}
+
+	return &device, nil
 }
 
 func NewDeviceRepository() DeviceRepository {

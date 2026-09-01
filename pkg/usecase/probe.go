@@ -56,14 +56,14 @@ func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet) error {
 	}
 	deviceMap := make(map[string]*domain.Device)
 	for _, device := range devices {
-		deviceMap[device.MACAddress] = device
+		deviceMap[device.MACAddress.String()] = device
 	}
 
 	deviceToCreate := make([]*domain.Device, 0)
 	for _, entry := range entries {
 		if _, ok := deviceMap[entry.MAC.String()]; !ok {
 			deviceToCreate = append(deviceToCreate, &domain.Device{
-				MACAddress: entry.MAC.String(),
+				MACAddress: entry.MAC,
 			})
 		}
 	}
@@ -74,7 +74,7 @@ func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet) error {
 			return err
 		}
 		for _, device := range newDevices {
-			deviceMap[device.MACAddress] = device
+			deviceMap[device.MACAddress.String()] = device
 		}
 	}
 

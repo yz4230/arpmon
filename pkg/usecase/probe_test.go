@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"net"
@@ -33,7 +34,7 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 		createDeviceProbesErr          error
 		wantErr                        error
 		wantCreatedDevices             []wantDevice
-		wantNewDeviceMACs              []string
+		wantNewDeviceMACs              []net.HardwareAddr
 		wantDeviceProbes               []wantDeviceProbe
 		wantDeviceCreateManyCalls      int
 		wantDeviceProbeCreateManyCalls int
@@ -49,7 +50,7 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			}},
 			existingDevices: []*domain.Device{{
 				ID:         42,
-				MACAddress: existingMAC.String(),
+				MACAddress: existingMAC,
 			}},
 			wantDeviceProbes: []wantDeviceProbe{{
 				deviceID:  42,
@@ -68,14 +69,14 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			}},
 			wantCreatedDevices: []wantDevice{{
 				id:  1,
-				mac: newMAC.String(),
+				mac: newMAC,
 			}},
 			wantDeviceProbes: []wantDeviceProbe{{
 				deviceID:  1,
 				probeID:   1,
 				isPresent: true,
 			}},
-			wantNewDeviceMACs:              []string{newMAC.String()},
+			wantNewDeviceMACs:              []net.HardwareAddr{newMAC},
 			wantDeviceCreateManyCalls:      1,
 			wantDeviceProbeCreateManyCalls: 1,
 			wantBeginCount:                 1,
@@ -90,18 +91,18 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			},
 			existingDevices: []*domain.Device{{
 				ID:         42,
-				MACAddress: existingMAC.String(),
+				MACAddress: existingMAC,
 			}},
 			wantCreatedDevices: []wantDevice{
-				{id: 43, mac: newMAC.String()},
-				{id: 44, mac: anotherNewMAC.String()},
+				{id: 43, mac: newMAC},
+				{id: 44, mac: anotherNewMAC},
 			},
 			wantDeviceProbes: []wantDeviceProbe{
 				{deviceID: 42, probeID: 1, isPresent: true},
 				{deviceID: 43, probeID: 1, isPresent: true},
 				{deviceID: 44, probeID: 1, isPresent: true},
 			},
-			wantNewDeviceMACs:              []string{newMAC.String(), anotherNewMAC.String()},
+			wantNewDeviceMACs:              []net.HardwareAddr{newMAC, anotherNewMAC},
 			wantDeviceCreateManyCalls:      1,
 			wantDeviceProbeCreateManyCalls: 1,
 			wantBeginCount:                 1,
@@ -128,7 +129,7 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			}},
 			createDevicesErr:          createDevicesErr,
 			wantErr:                   createDevicesErr,
-			wantNewDeviceMACs:         []string{newMAC.String()},
+			wantNewDeviceMACs:         []net.HardwareAddr{newMAC},
 			wantDeviceCreateManyCalls: 1,
 			wantBeginCount:            1,
 			wantRollbackCount:         1,
@@ -141,7 +142,7 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			}},
 			existingDevices: []*domain.Device{{
 				ID:         42,
-				MACAddress: existingMAC.String(),
+				MACAddress: existingMAC,
 			}},
 			createDeviceProbesErr:          createDeviceProbesErr,
 			wantErr:                        createDeviceProbesErr,
@@ -217,7 +218,7 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 
 type wantDevice struct {
 	id  int
-	mac string
+	mac net.HardwareAddr
 }
 
 type wantDeviceProbe struct {
@@ -243,21 +244,21 @@ func assertDevices(t *testing.T, got []*domain.Device, want []wantDevice) {
 		t.Fatalf("created devices = %d, want %d", len(got), len(want))
 	}
 	for i, wantDevice := range want {
-		if got[i].ID != wantDevice.id || got[i].MACAddress != wantDevice.mac {
-			t.Errorf("created device %d = %#v, want ID %d and MAC %s", i, got[i], wantDevice.id, wantDevice.mac)
+		if got[i].ID != wantDevice.id || !bytes.Equal(got[i].MACAddress, wantDevice.mac) {
+			t.Errorf("created device %d = %#v, want ID %d and MAC %s", i, got[i], wantDevice.id, wantDevice.mac.String())
 		}
 	}
 }
 
-func assertDeviceMACs(t *testing.T, got []*domain.Device, want []string) {
+func assertDeviceMACs(t *testing.T, got []*domain.Device, want []net.HardwareAddr) {
 	t.Helper()
 
 	if len(got) != len(want) {
 		t.Fatalf("devices passed to CreateMany = %d, want %d", len(got), len(want))
 	}
 	for i, wantMAC := range want {
-		if got[i].MACAddress != wantMAC {
-			t.Errorf("device passed to CreateMany at index %d has MAC %q, want %q", i, got[i].MACAddress, wantMAC)
+		if !bytes.Equal(got[i].MACAddress, wantMAC) {
+			t.Errorf("device passed to CreateMany at index %d has MAC %q, want %q", i, got[i].MACAddress.String(), wantMAC.String())
 		}
 	}
 }

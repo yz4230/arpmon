@@ -27,7 +27,7 @@ type MemberAttendance struct {
 type Device struct {
 	Timestamp
 	ID         int
-	MACAddress string
+	MACAddress net.HardwareAddr
 }
 
 type Probe struct {
