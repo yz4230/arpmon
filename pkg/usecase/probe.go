@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net"
 
 	"github.com/samber/do"
@@ -57,17 +58,31 @@ func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet) error {
 	for _, device := range devices {
 		deviceMap[device.MACAddress] = device
 	}
+
+	deviceToCreate := make([]*domain.Device, 0)
+	for _, entry := range entries {
+		if _, ok := deviceMap[entry.MAC.String()]; !ok {
+			deviceToCreate = append(deviceToCreate, &domain.Device{
+				MACAddress: entry.MAC.String(),
+			})
+		}
+	}
+
+	if len(deviceToCreate) > 0 {
+		newDevices, err := p.deviceRepository.CreateMany(ctx, tx, deviceToCreate)
+		if err != nil {
+			return err
+		}
+		for _, device := range newDevices {
+			deviceMap[device.MACAddress] = device
+		}
+	}
+
 	deviceProbes := make([]*domain.DeviceProbe, 0, len(entries))
 	for _, entry := range entries {
 		device, ok := deviceMap[entry.MAC.String()]
 		if !ok {
-			device, err = p.deviceRepository.Create(ctx, tx, &domain.Device{
-				MACAddress: entry.MAC.String(),
-			})
-			if err != nil {
-				return err
-			}
-			deviceMap[device.MACAddress] = device
+			return fmt.Errorf("device with MAC %s not found", entry.MAC.String())
 		}
 
 		deviceProbes = append(deviceProbes, &domain.DeviceProbe{

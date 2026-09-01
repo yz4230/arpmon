@@ -86,3 +86,44 @@ func TestDeviceRepositoryCRUD(t *testing.T) {
 		t.Fatalf("Transaction commit failed: %v", err)
 	}
 }
+
+func TestDeviceRepositoryCreateMany(t *testing.T) {
+	tdb := tdbf.CreateTestDatabase(t)
+	tdb.Connect(t)
+	t.Cleanup(func() { tdb.Conn.Close() })
+
+	applyMigrations(t, tdb)
+
+	tx, err := tdb.Conn.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	devices := []*domain.Device{
+		{MACAddress: "00:11:22:33:44:55"},
+		{MACAddress: "aa:bb:cc:dd:ee:ff"},
+	}
+	created, err := NewDeviceRepository().CreateMany(context.Background(), tx, devices)
+	if err != nil {
+		t.Fatalf("CreateMany failed: %v", err)
+	}
+
+	if len(created) != len(devices) {
+		t.Fatalf("CreateMany returned %d devices, want %d", len(created), len(devices))
+	}
+	for i, device := range created {
+		testutil.AssertAllFieldsNonZero(t, device)
+		if device.MACAddress != devices[i].MACAddress {
+			t.Fatalf("created device at index %d has MAC address %q, want %q", i, device.MACAddress, devices[i].MACAddress)
+		}
+	}
+
+	empty, err := NewDeviceRepository().CreateMany(context.Background(), tx, nil)
+	if err != nil || len(empty) != 0 {
+		t.Fatalf("CreateMany with no devices returned %v, %v", empty, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("Transaction commit failed: %v", err)
+	}
+}

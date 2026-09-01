@@ -14,27 +14,32 @@ import (
 func TestProbeUseCaseDoARPScan(t *testing.T) {
 	existingMAC := mustParseMAC(t, "00:11:22:33:44:55")
 	newMAC := mustParseMAC(t, "aa:bb:cc:dd:ee:ff")
+	anotherNewMAC := mustParseMAC(t, "12:34:56:78:9a:bc")
 	_, target, err := net.ParseCIDR("192.168.1.0/24")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	scanErr := errors.New("scan failed")
-	createManyErr := errors.New("create device probes failed")
+	createDevicesErr := errors.New("create devices failed")
+	createDeviceProbesErr := errors.New("create device probes failed")
 
 	tests := []struct {
-		name                string
-		entries             []*arpscan.Entry
-		scanErr             error
-		existingDevices     []*domain.Device
-		createManyErr       error
-		wantErr             error
-		wantCreatedDevices  []wantDevice
-		wantDeviceProbes    []wantDeviceProbe
-		wantCreateManyCalls int
-		wantBeginCount      int
-		wantCommitCount     int
-		wantRollbackCount   int
+		name                           string
+		entries                        []*arpscan.Entry
+		scanErr                        error
+		existingDevices                []*domain.Device
+		createDevicesErr               error
+		createDeviceProbesErr          error
+		wantErr                        error
+		wantCreatedDevices             []wantDevice
+		wantNewDeviceMACs              []string
+		wantDeviceProbes               []wantDeviceProbe
+		wantDeviceCreateManyCalls      int
+		wantDeviceProbeCreateManyCalls int
+		wantBeginCount                 int
+		wantCommitCount                int
+		wantRollbackCount              int
 	}{
 		{
 			name: "device exists",
@@ -51,9 +56,9 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				probeID:   1,
 				isPresent: true,
 			}},
-			wantCreateManyCalls: 1,
-			wantBeginCount:      1,
-			wantCommitCount:     1,
+			wantDeviceProbeCreateManyCalls: 1,
+			wantBeginCount:                 1,
+			wantCommitCount:                1,
 		},
 		{
 			name: "device does not exist",
@@ -70,46 +75,63 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				probeID:   1,
 				isPresent: true,
 			}},
-			wantCreateManyCalls: 1,
-			wantBeginCount:      1,
-			wantCommitCount:     1,
+			wantNewDeviceMACs:              []string{newMAC.String()},
+			wantDeviceCreateManyCalls:      1,
+			wantDeviceProbeCreateManyCalls: 1,
+			wantBeginCount:                 1,
+			wantCommitCount:                1,
 		},
 		{
-			name: "one device exists and one device does not exist",
+			name: "one device exists and two devices do not exist",
 			entries: []*arpscan.Entry{
 				{MAC: existingMAC, IP: net.ParseIP("192.168.1.10")},
 				{MAC: newMAC, IP: net.ParseIP("192.168.1.11")},
+				{MAC: anotherNewMAC, IP: net.ParseIP("192.168.1.12")},
 			},
 			existingDevices: []*domain.Device{{
 				ID:         42,
 				MACAddress: existingMAC.String(),
 			}},
-			wantCreatedDevices: []wantDevice{{
-				id:  43,
-				mac: newMAC.String(),
-			}},
+			wantCreatedDevices: []wantDevice{
+				{id: 43, mac: newMAC.String()},
+				{id: 44, mac: anotherNewMAC.String()},
+			},
 			wantDeviceProbes: []wantDeviceProbe{
 				{deviceID: 42, probeID: 1, isPresent: true},
 				{deviceID: 43, probeID: 1, isPresent: true},
+				{deviceID: 44, probeID: 1, isPresent: true},
 			},
-			wantCreateManyCalls: 1,
-			wantBeginCount:      1,
-			wantCommitCount:     1,
+			wantNewDeviceMACs:              []string{newMAC.String(), anotherNewMAC.String()},
+			wantDeviceCreateManyCalls:      1,
+			wantDeviceProbeCreateManyCalls: 1,
+			wantBeginCount:                 1,
+			wantCommitCount:                1,
 		},
 		{
-			name:                "no device is returned by scanner",
-			entries:             nil,
-			wantCreateManyCalls: 1,
-			wantBeginCount:      1,
-			wantCommitCount:     1,
+			name:                           "no device is returned by scanner",
+			entries:                        nil,
+			wantDeviceProbeCreateManyCalls: 1,
+			wantBeginCount:                 1,
+			wantCommitCount:                1,
 		},
 		{
-			name:              "scanner returns an error",
-			scanErr:           scanErr,
-			wantErr:           scanErr,
-			wantBeginCount:    0,
-			wantCommitCount:   0,
-			wantRollbackCount: 0,
+			name:           "scanner returns an error",
+			scanErr:        scanErr,
+			wantErr:        scanErr,
+			wantBeginCount: 0,
+		},
+		{
+			name: "device repository returns an error",
+			entries: []*arpscan.Entry{{
+				MAC: newMAC,
+				IP:  net.ParseIP("192.168.1.11"),
+			}},
+			createDevicesErr:          createDevicesErr,
+			wantErr:                   createDevicesErr,
+			wantNewDeviceMACs:         []string{newMAC.String()},
+			wantDeviceCreateManyCalls: 1,
+			wantBeginCount:            1,
+			wantRollbackCount:         1,
 		},
 		{
 			name: "device probe repository returns an error",
@@ -121,17 +143,12 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				ID:         42,
 				MACAddress: existingMAC.String(),
 			}},
-			createManyErr: createManyErr,
-			wantErr:       createManyErr,
-			wantDeviceProbes: []wantDeviceProbe{{
-				deviceID:  42,
-				probeID:   1,
-				isPresent: true,
-			}},
-			wantCreateManyCalls: 1,
-			wantBeginCount:      1,
-			wantCommitCount:     0,
-			wantRollbackCount:   1,
+			createDeviceProbesErr:          createDeviceProbesErr,
+			wantErr:                        createDeviceProbesErr,
+			wantDeviceProbes:               []wantDeviceProbe{{deviceID: 42, probeID: 1, isPresent: true}},
+			wantDeviceProbeCreateManyCalls: 1,
+			wantBeginCount:                 1,
+			wantRollbackCount:              1,
 		},
 	}
 
@@ -143,7 +160,8 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			scanner := &inMemoryARPScanner{entries: tt.entries, err: tt.scanErr}
 			probeRepository := newInMemoryProbeRepository()
 			deviceRepository := newInMemoryDeviceRepository(tt.existingDevices)
-			deviceProbeRepository := &inMemoryDeviceProbeRepository{createManyErr: tt.createManyErr}
+			deviceRepository.createManyErr = tt.createDevicesErr
+			deviceProbeRepository := &inMemoryDeviceProbeRepository{createManyErr: tt.createDeviceProbesErr}
 
 			uc := &probeUseCase{
 				conn:                  testDB.Conn,
@@ -175,10 +193,17 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			}
 
 			assertDevices(t, deviceRepository.created, tt.wantCreatedDevices)
-			if deviceProbeRepository.createManyCalls != tt.wantCreateManyCalls {
-				t.Fatalf("CreateMany() called %d times, want %d", deviceProbeRepository.createManyCalls, tt.wantCreateManyCalls)
+			if deviceRepository.createManyCalls != tt.wantDeviceCreateManyCalls {
+				t.Fatalf("DeviceRepository.CreateMany() called %d times, want %d", deviceRepository.createManyCalls, tt.wantDeviceCreateManyCalls)
 			}
-			if len(deviceProbeRepository.received) > 0 {
+			if deviceRepository.createManyCalls > 0 {
+				assertDeviceMACs(t, deviceRepository.received[0], tt.wantNewDeviceMACs)
+			}
+
+			if deviceProbeRepository.createManyCalls != tt.wantDeviceProbeCreateManyCalls {
+				t.Fatalf("DeviceProbeRepository.CreateMany() called %d times, want %d", deviceProbeRepository.createManyCalls, tt.wantDeviceProbeCreateManyCalls)
+			}
+			if deviceProbeRepository.createManyCalls > 0 {
 				assertDeviceProbes(t, deviceProbeRepository.received[0], tt.wantDeviceProbes)
 			}
 
@@ -220,6 +245,19 @@ func assertDevices(t *testing.T, got []*domain.Device, want []wantDevice) {
 	for i, wantDevice := range want {
 		if got[i].ID != wantDevice.id || got[i].MACAddress != wantDevice.mac {
 			t.Errorf("created device %d = %#v, want ID %d and MAC %s", i, got[i], wantDevice.id, wantDevice.mac)
+		}
+	}
+}
+
+func assertDeviceMACs(t *testing.T, got []*domain.Device, want []string) {
+	t.Helper()
+
+	if len(got) != len(want) {
+		t.Fatalf("devices passed to CreateMany = %d, want %d", len(got), len(want))
+	}
+	for i, wantMAC := range want {
+		if got[i].MACAddress != wantMAC {
+			t.Errorf("device passed to CreateMany at index %d has MAC %q, want %q", i, got[i].MACAddress, wantMAC)
 		}
 	}
 }

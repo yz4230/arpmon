@@ -74,9 +74,12 @@ func (r *inMemoryProbeRepository) DeleteByID(_ context.Context, _ *sql.Tx, id in
 var _ repository.ProbeRepository = (*inMemoryProbeRepository)(nil)
 
 type inMemoryDeviceRepository struct {
-	nextID  int
-	devices []*domain.Device
-	created []*domain.Device
+	nextID          int
+	devices         []*domain.Device
+	created         []*domain.Device
+	createManyErr   error
+	createManyCalls int
+	received        [][]*domain.Device
 }
 
 func newInMemoryDeviceRepository(existing []*domain.Device) *inMemoryDeviceRepository {
@@ -98,6 +101,31 @@ func (r *inMemoryDeviceRepository) Create(_ context.Context, _ *sql.Tx, device *
 	r.devices = append(r.devices, &created)
 	r.created = append(r.created, &created)
 	return &created, nil
+}
+
+func (r *inMemoryDeviceRepository) CreateMany(ctx context.Context, tx *sql.Tx, devices []*domain.Device) ([]*domain.Device, error) {
+	r.createManyCalls++
+
+	input := make([]*domain.Device, 0, len(devices))
+	for _, device := range devices {
+		copy := *device
+		input = append(input, &copy)
+	}
+	r.received = append(r.received, input)
+
+	if r.createManyErr != nil {
+		return nil, r.createManyErr
+	}
+
+	created := make([]*domain.Device, 0, len(devices))
+	for _, device := range devices {
+		createdDevice, err := r.Create(ctx, tx, device)
+		if err != nil {
+			return nil, err
+		}
+		created = append(created, createdDevice)
+	}
+	return created, nil
 }
 
 func (r *inMemoryDeviceRepository) GetByID(_ context.Context, _ *sql.Tx, id int) (*domain.Device, error) {
