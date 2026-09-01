@@ -252,3 +252,40 @@ func (r *inMemoryDeviceProbeRepository) DeleteByID(_ context.Context, _ *sql.Tx,
 }
 
 var _ repository.DeviceProbeRepository = (*inMemoryDeviceProbeRepository)(nil)
+
+type inMemoryMemberAttendanceRepository struct{}
+
+func (r *inMemoryMemberAttendanceRepository) Create(_ context.Context, _ *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error) {
+	created := *attendance
+	created.ID = 1
+	return &created, nil
+}
+
+func (r *inMemoryMemberAttendanceRepository) CreateMany(_ context.Context, _ *sql.Tx, attendances []*domain.MemberAttendance) ([]*domain.MemberAttendance, error) {
+	created := make([]*domain.MemberAttendance, 0, len(attendances))
+	for i, attendance := range attendances {
+		copy := *attendance
+		copy.ID = i + 1
+		created = append(created, &copy)
+	}
+	return created, nil
+}
+
+func (r *inMemoryMemberAttendanceRepository) GetByID(_ context.Context, _ *sql.Tx, _ int) (*domain.MemberAttendance, error) {
+	return nil, sql.ErrNoRows
+}
+
+func (r *inMemoryMemberAttendanceRepository) List(_ context.Context, _ *sql.Tx) ([]*domain.MemberAttendance, error) {
+	return nil, nil
+}
+
+func (r *inMemoryMemberAttendanceRepository) Update(_ context.Context, _ *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error) {
+	updated := *attendance
+	return &updated, nil
+}
+
+func (r *inMemoryMemberAttendanceRepository) DeleteByID(_ context.Context, _ *sql.Tx, _ int) error {
+	return nil
+}
+
+var _ repository.MemberAttendanceRepository = (*inMemoryMemberAttendanceRepository)(nil)

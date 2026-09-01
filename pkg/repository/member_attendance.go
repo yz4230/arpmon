@@ -3,12 +3,15 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/yz4230/arpmon/pkg/domain"
 )
 
 type MemberAttendanceRepository interface {
 	Create(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error)
+	CreateMany(ctx context.Context, tx *sql.Tx, attendances []*domain.MemberAttendance) ([]*domain.MemberAttendance, error)
 	GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.MemberAttendance, error)
 	List(ctx context.Context, tx *sql.Tx) ([]*domain.MemberAttendance, error)
 	Update(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error)
@@ -38,6 +41,44 @@ func (r *memberAttendanceRepository) Create(ctx context.Context, tx *sql.Tx, att
 	}
 
 	return nil, sql.ErrNoRows
+}
+
+func (r *memberAttendanceRepository) CreateMany(ctx context.Context, tx *sql.Tx, attendances []*domain.MemberAttendance) ([]*domain.MemberAttendance, error) {
+	if len(attendances) == 0 {
+		return nil, nil
+	}
+
+	values := make([]string, len(attendances))
+	args := make([]any, 0, len(attendances)*3)
+	for i, attendance := range attendances {
+		values[i] = fmt.Sprintf("($%d, $%d, $%d)", i*3+1, i*3+2, i*3+3)
+		args = append(args, attendance.MemberID, attendance.ProbeID, attendance.IsPresent)
+	}
+
+	rows, err := tx.QueryContext(ctx, `
+		INSERT INTO member_attendances (member_id, probe_id, is_present)
+		VALUES `+strings.Join(values, ", ")+`
+		RETURNING id, member_id, probe_id, is_present, created_at, updated_at
+	`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	created := make([]*domain.MemberAttendance, 0, len(attendances))
+	for rows.Next() {
+		var attendance domain.MemberAttendance
+		if err := rows.Scan(&attendance.ID, &attendance.MemberID, &attendance.ProbeID, &attendance.IsPresent, &attendance.CreatedAt, &attendance.UpdatedAt); err != nil {
+			return nil, err
+		}
+		created = append(created, &attendance)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return created, nil
 }
 
 func (r *memberAttendanceRepository) GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.MemberAttendance, error) {

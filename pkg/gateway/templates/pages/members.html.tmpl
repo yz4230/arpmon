@@ -1,0 +1,69 @@
+{{ define "content" }}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <a class="link-secondary text-decoration-none" href="/">&larr; Back to probes</a>
+      <h1 class="h3 mt-2 mb-0">Members</h1>
+    </div>
+    <span class="badge text-bg-secondary">{{ len .Members }}</span>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="h5">Add a member</h2>
+          <p class="text-body-secondary small">Members appear in the attendance checklist before each probe.</p>
+          <form action="/members" method="post">
+            <label class="form-label" for="member-name">Name</label>
+            <input class="form-control" id="member-name" name="name" type="text" required maxlength="200" autocomplete="name">
+            <button class="btn btn-primary mt-3" type="submit">Add member</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="h5">Manage members</h2>
+          {{ if .Members }}
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Created</th>
+                  <th scope="col" class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{ range .Members }}
+                <tr>
+                  <td>
+                    <form action="/members/{{ .ID }}" method="post" class="d-flex gap-2">
+                      <label class="visually-hidden" for="member-{{ .ID }}-name">Member name</label>
+                      <input class="form-control" id="member-{{ .ID }}-name" name="name" type="text" value="{{ .Name }}" required maxlength="200">
+                      <button class="btn btn-outline-primary text-nowrap" type="submit">Save</button>
+                    </form>
+                  </td>
+                  <td class="text-body-secondary text-nowrap small">{{ formatDateTime .CreatedAt }}</td>
+                  <td class="text-end">
+                    <form action="/members/{{ .ID }}/delete" method="post">
+                      <button class="btn btn-outline-danger" type="submit">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+                {{ end }}
+              </tbody>
+            </table>
+          </div>
+          {{ else }}
+          <p class="text-body-secondary mb-0">No members yet. Add the people you want to track.</p>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}

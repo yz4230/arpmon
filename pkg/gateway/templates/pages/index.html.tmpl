@@ -4,6 +4,7 @@
     <h1 class="h3 mb-0">Probes</h1>
     <div class="d-flex align-items-center gap-2">
       <span class="badge text-bg-secondary">{{ len .Probes }}</span>
+      <a class="btn btn-outline-secondary" href="/members">Members <span class="badge text-bg-secondary">{{ len .Members }}</span></a>
       <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newProbeModal">
         New probe
       </button>
@@ -52,6 +53,25 @@
               <input class="form-control" id="probe-target" name="target" type="text" value="192.168.1.0/24" placeholder="192.168.1.0/24" required aria-describedby="probe-target-help">
               <div class="form-text" id="probe-target-help">Enter the network to scan in CIDR notation.</div>
             </div>
+            <fieldset class="mt-4">
+              <legend class="form-label mb-1">Who is present?</legend>
+              <p class="form-text mb-2">Check everyone who is currently in the room. This attendance snapshot is saved with the probe.</p>
+              {{ if .Members }}
+              <div class="list-group">
+                {{ range .Members }}
+                <label class="list-group-item d-flex align-items-center gap-2" for="present-member-{{ .ID }}">
+                  <input type="hidden" name="member_ids" value="{{ .ID }}">
+                  <input class="form-check-input flex-shrink-0" id="present-member-{{ .ID }}" name="present_member_ids" type="checkbox" value="{{ .ID }}">
+                  <span>{{ .Name }}</span>
+                </label>
+                {{ end }}
+              </div>
+              {{ else }}
+              <div class="alert alert-light border small mb-0">
+                No members configured. <a href="/members">Add members</a> before the next probe.
+              </div>
+              {{ end }}
+            </fieldset>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

@@ -13,28 +13,30 @@ import (
 )
 
 type ProbeUseCase interface {
-	Do(ctx context.Context, target *net.IPNet) error
+	Do(ctx context.Context, target *net.IPNet, members []*domain.MemberAttendance) error
 }
 
 type probeUseCase struct {
-	conn                  *sql.DB
-	scanner               arpscan.ARPScanner
-	probeRepository       repository.ProbeRepository
-	deviceRepository      repository.DeviceRepository
-	deviceProbeRepository repository.DeviceProbeRepository
+	conn                       *sql.DB
+	scanner                    arpscan.ARPScanner
+	probeRepository            repository.ProbeRepository
+	deviceRepository           repository.DeviceRepository
+	deviceProbeRepository      repository.DeviceProbeRepository
+	memberAttendanceRepository repository.MemberAttendanceRepository
 }
 
 func NewProbeUseCase(i *do.Injector) ProbeUseCase {
 	return &probeUseCase{
-		conn:                  do.MustInvoke[*sql.DB](i),
-		scanner:               do.MustInvoke[arpscan.ARPScanner](i),
-		probeRepository:       do.MustInvoke[repository.ProbeRepository](i),
-		deviceRepository:      do.MustInvoke[repository.DeviceRepository](i),
-		deviceProbeRepository: do.MustInvoke[repository.DeviceProbeRepository](i),
+		conn:                       do.MustInvoke[*sql.DB](i),
+		scanner:                    do.MustInvoke[arpscan.ARPScanner](i),
+		probeRepository:            do.MustInvoke[repository.ProbeRepository](i),
+		deviceRepository:           do.MustInvoke[repository.DeviceRepository](i),
+		deviceProbeRepository:      do.MustInvoke[repository.DeviceProbeRepository](i),
+		memberAttendanceRepository: do.MustInvoke[repository.MemberAttendanceRepository](i),
 	}
 }
 
-func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet) error {
+func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet, members []*domain.MemberAttendance) error {
 	entries, err := p.scanner.Scan(target)
 	if err != nil {
 		return err
@@ -50,6 +52,7 @@ func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet) error {
 	if err != nil {
 		return err
 	}
+
 	devices, err := p.deviceRepository.List(ctx, tx)
 	if err != nil {
 		return err
@@ -93,6 +96,13 @@ func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet) error {
 	}
 
 	if _, err := p.deviceProbeRepository.CreateMany(ctx, tx, deviceProbes); err != nil {
+		return err
+	}
+
+	for _, member := range members {
+		member.ProbeID = probe.ID
+	}
+	if _, err := p.memberAttendanceRepository.CreateMany(ctx, tx, members); err != nil {
 		return err
 	}
 

@@ -21,6 +21,7 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 	e.Renderer = &echo.TemplateRenderer{Template: NewTemplateRenderer()}
 
 	e.StaticFS("/static", echo.MustSubFS(staticFiles, "static"))
+	registerMemberHandlers(e, i)
 
 	e.GET("/health", func(c *echo.Context) error {
 		var health struct {
@@ -45,9 +46,13 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 		if err != nil {
 			return c.String(http.StatusBadRequest, "Target must be a valid CIDR, for example 192.168.1.0/24.")
 		}
+		members, err := memberAttendancesFromRequest(c.Request())
+		if err != nil {
+			return c.String(http.StatusBadRequest, "Member selection contains an invalid member ID.")
+		}
 
 		probeUseCase := do.MustInvoke[usecase.ProbeUseCase](i)
-		if err := probeUseCase.Do(c.Request().Context(), target); err != nil {
+		if err := probeUseCase.Do(c.Request().Context(), target, members); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run probe").Wrap(err)
 		}
 
@@ -62,6 +67,7 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 	e.GET("/", func(c *echo.Context) error {
 		db := do.MustInvoke[*sql.DB](i)
 		probeRepository := do.MustInvoke[repository.ProbeRepository](i)
+		memberRepository := do.MustInvoke[repository.MemberRepository](i)
 		ctx := c.Request().Context()
 		tx, err := db.BeginTx(ctx, nil)
 		if err != nil {
@@ -73,13 +79,18 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 		if err != nil {
 			return err
 		}
+		members, err := memberRepository.List(ctx, tx)
+		if err != nil {
+			return err
+		}
 		if err := tx.Commit(); err != nil {
 			return err
 		}
 
 		return c.Render(http.StatusOK, "index", map[string]any{
-			"Title":  "ARP Monitor",
-			"Probes": probes,
+			"Title":   "ARP Monitor",
+			"Members": members,
+			"Probes":  probes,
 		})
 	})
 }

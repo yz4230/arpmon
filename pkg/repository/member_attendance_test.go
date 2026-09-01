@@ -103,3 +103,57 @@ func TestMemberAttendanceRepositoryCRUD(t *testing.T) {
 		t.Fatalf("Transaction commit failed: %v", err)
 	}
 }
+
+func TestMemberAttendanceRepositoryCreateMany(t *testing.T) {
+	tdb := tdbf.CreateTestDatabase(t)
+	tdb.Connect(t)
+	t.Cleanup(func() { tdb.Conn.Close() })
+
+	applyMigrations(t, tdb)
+
+	tx, err := tdb.Conn.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	member, err := NewMemberRepository().Create(context.Background(), tx, &domain.Member{Name: "John Doe"})
+	if err != nil {
+		t.Fatalf("Create member failed: %v", err)
+	}
+
+	_, target, err := net.ParseCIDR("192.168.1.0/24")
+	if err != nil {
+		t.Fatal(err)
+	}
+	probe, err := NewProbeRepository().Create(context.Background(), tx, &domain.Probe{Target: target})
+	if err != nil {
+		t.Fatalf("Create probe failed: %v", err)
+	}
+
+	attendances := []*domain.MemberAttendance{
+		{MemberID: member.ID, ProbeID: probe.ID, IsPresent: true},
+		{MemberID: member.ID, ProbeID: probe.ID, IsPresent: false},
+	}
+	created, err := NewMemberAttendanceRepository().CreateMany(context.Background(), tx, attendances)
+	if err != nil {
+		t.Fatalf("CreateMany failed: %v", err)
+	}
+
+	if len(created) != len(attendances) {
+		t.Fatalf("CreateMany returned %d attendances, want %d", len(created), len(attendances))
+	}
+	for i, attendance := range created {
+		if attendance.ID == 0 || attendance.MemberID != attendances[i].MemberID || attendance.ProbeID != attendances[i].ProbeID || attendance.IsPresent != attendances[i].IsPresent || attendance.CreatedAt.IsZero() || attendance.UpdatedAt.IsZero() {
+			t.Fatalf("created member attendance does not match at index %d", i)
+		}
+	}
+
+	empty, err := NewMemberAttendanceRepository().CreateMany(context.Background(), tx, nil)
+	if err != nil || len(empty) != 0 {
+		t.Fatalf("CreateMany with no attendances returned %v, %v", empty, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("Transaction commit failed: %v", err)
+	}
+}

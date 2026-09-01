@@ -165,14 +165,15 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			deviceProbeRepository := &inMemoryDeviceProbeRepository{createManyErr: tt.createDeviceProbesErr}
 
 			uc := &probeUseCase{
-				conn:                  testDB.Conn,
-				scanner:               scanner,
-				probeRepository:       probeRepository,
-				deviceRepository:      deviceRepository,
-				deviceProbeRepository: deviceProbeRepository,
+				conn:                       testDB.Conn,
+				scanner:                    scanner,
+				probeRepository:            probeRepository,
+				deviceRepository:           deviceRepository,
+				deviceProbeRepository:      deviceProbeRepository,
+				memberAttendanceRepository: &inMemoryMemberAttendanceRepository{},
 			}
 
-			gotErr := uc.Do(context.Background(), target)
+			gotErr := uc.Do(context.Background(), target, nil)
 			if !errors.Is(gotErr, tt.wantErr) {
 				t.Fatalf("DoARPScan() error = %v, want %v", gotErr, tt.wantErr)
 			}
