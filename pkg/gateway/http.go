@@ -6,9 +6,11 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v5"
 	"github.com/samber/do"
+	"github.com/yz4230/arpmon/pkg/domain"
 	"github.com/yz4230/arpmon/pkg/repository"
 	"github.com/yz4230/arpmon/pkg/uptime"
 	"github.com/yz4230/arpmon/pkg/usecase"
@@ -39,6 +41,54 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 		}
 
 		return c.JSON(http.StatusOK, health)
+	})
+
+	e.GET("/probes/new", func(c *echo.Context) error {
+		db := do.MustInvoke[*sql.DB](i)
+		memberRepository := do.MustInvoke[repository.MemberRepository](i)
+		ctx := c.Request().Context()
+		tx, err := db.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+
+		members, err := memberRepository.List(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+
+		return c.Render(http.StatusOK, "new-probe", map[string]any{
+			"Title":   "New probe",
+			"Members": members,
+		})
+	})
+
+	e.GET("/probes", func(c *echo.Context) error {
+		db := do.MustInvoke[*sql.DB](i)
+		probeRepository := do.MustInvoke[repository.ProbeRepository](i)
+		ctx := c.Request().Context()
+		tx, err := db.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+
+		probes, err := probeRepository.List(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+
+		return c.Render(http.StatusOK, "probes", map[string]any{
+			"Title":  "Probes",
+			"Probes": probes,
+		})
 	})
 
 	e.POST("/probes", func(c *echo.Context) error {
@@ -88,9 +138,30 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 		}
 
 		return c.Render(http.StatusOK, "index", map[string]any{
-			"Title":   "ARP Monitor",
-			"Members": members,
-			"Probes":  probes,
+			"Title": "ARP Monitor",
+			"Stats": newDashboardStats(members, probes, time.Now()),
 		})
 	})
+}
+
+type DashboardStats struct {
+	MemberCount      int
+	TotalProbeCount  int
+	RecentProbeCount int
+}
+
+func newDashboardStats(members []*domain.Member, probes []*domain.Probe, now time.Time) DashboardStats {
+	since := now.Add(-7 * 24 * time.Hour)
+	recentProbeCount := 0
+	for _, probe := range probes {
+		if probe != nil && !probe.CreatedAt.Before(since) && !probe.CreatedAt.After(now) {
+			recentProbeCount++
+		}
+	}
+
+	return DashboardStats{
+		MemberCount:      len(members),
+		TotalProbeCount:  len(probes),
+		RecentProbeCount: recentProbeCount,
+	}
 }

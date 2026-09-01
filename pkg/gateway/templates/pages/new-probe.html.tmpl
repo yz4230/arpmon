@@ -1,0 +1,58 @@
+{{ define "content" }}
+<div class="container py-4">
+  <div class="mb-4">
+    <a class="link-secondary text-decoration-none" href="/probes">&larr; Back to probes</a>
+    <h1 class="h3 mt-2 mb-1">Run a new probe</h1>
+    <p class="text-body-secondary mb-0">Scan a network and save the member attendance snapshot.</p>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8 col-xl-7">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <form class="probe-form" action="/probes" method="post" hx-post="/probes" hx-target="#probe-feedback" hx-swap="innerHTML" hx-disable="find button[type='submit']" hx-status:4xx="target:#probe-feedback" hx-status:5xx="target:#probe-feedback">
+            <div id="probe-feedback" class="text-danger small mb-3" aria-live="polite"></div>
+            <div>
+              <label class="form-label" for="probe-target">Target network</label>
+              <input class="form-control" id="probe-target" name="target" type="text" value="192.168.1.0/24" placeholder="192.168.1.0/24" required aria-describedby="probe-target-help">
+              <div class="form-text" id="probe-target-help">Enter the network to scan in CIDR notation.</div>
+            </div>
+
+            <fieldset class="mt-4">
+              <legend class="form-label mb-1">Member attendance</legend>
+              <p class="form-text mb-2">Choose Present or Not Present for each member. This attendance snapshot is saved with the probe.</p>
+              {{ if .Members }}
+              <div class="list-group">
+                {{ range .Members }}
+                <div class="list-group-item">
+                  <input type="hidden" name="member_ids" value="{{ .ID }}">
+                  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <span id="member-{{ .ID }}-name">{{ .Name }}</span>
+                    <div class="btn-group" role="group" aria-labelledby="member-{{ .ID }}-name">
+                      <input class="btn-check" id="member-{{ .ID }}-present" name="member_presence_{{ .ID }}" type="radio" value="present" autocomplete="off">
+                      <label class="btn btn-outline-success" for="member-{{ .ID }}-present">Present</label>
+                      <input class="btn-check" id="member-{{ .ID }}-not-present" name="member_presence_{{ .ID }}" type="radio" value="not_present" autocomplete="off" checked>
+                      <label class="btn btn-outline-secondary" for="member-{{ .ID }}-not-present">Not Present</label>
+                    </div>
+                  </div>
+                </div>
+                {{ end }}
+              </div>
+              {{ else }}
+              <div class="alert alert-light border small mb-0">
+                No members configured. <a href="/members">Add members</a> before the next probe.
+              </div>
+              {{ end }}
+            </fieldset>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a class="btn btn-secondary" href="/probes">Cancel</a>
+              <button type="submit" class="btn btn-primary probe-submit">Run probe</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}

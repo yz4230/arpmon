@@ -1,0 +1,48 @@
+{{ define "content" }}
+<div class="container py-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <a class="link-secondary text-decoration-none" href="/">&larr; Back to dashboard</a>
+      <h1 class="h3 mt-2 mb-0">Probes</h1>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge text-bg-secondary">{{ len .Probes }}</span>
+      <a class="btn btn-primary" href="/probes/new">New probe</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      {{ if .Probes }}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Target</th>
+              <th scope="col">Created</th>
+              <th scope="col">Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ range .Probes }}
+            <tr>
+              <th scope="row">{{ .ID }}</th>
+              <td><code>{{ .Target.String }}</code></td>
+              <td>{{ formatDateTime .CreatedAt }}</td>
+              <td>{{ formatDateTime .UpdatedAt }}</td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+      {{ else }}
+      <div class="text-center py-5">
+        <p class="text-body-secondary mb-3">No probes found.</p>
+        <a class="btn btn-primary" href="/probes/new">Run your first probe</a>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+</div>
+{{ end }}
