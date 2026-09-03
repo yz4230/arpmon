@@ -36,20 +36,20 @@
               <thead>
                 <tr>
                   <th scope="col">Name</th>
-                  <th scope="col" class="text-end">Actions</th>
+                  <th scope="col" class="ps-0" style="width: 1%">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {{ range .Members }}
                 <tr>
                   <td>
-                    <form action="/members/{{ .ID }}" method="post" class="d-flex gap-2">
+                    <form id="member-{{ .ID }}-update" action="/members/{{ .ID }}" method="post" class="d-flex gap-2">
                       <label class="visually-hidden" for="member-{{ .ID }}-name">Member name</label>
                       <input class="form-control" id="member-{{ .ID }}-name" name="name" type="text" value="{{ .Name }}" required maxlength="200">
                       <button class="btn btn-outline-primary text-nowrap" type="submit">Save</button>
                     </form>
                   </td>
-                  <td class="text-end">
+                  <td class="ps-0" style="width: 1%">
                     <form action="/members/{{ .ID }}/delete" method="post">
                       <button class="btn btn-outline-danger" type="submit">Delete</button>
                     </form>
