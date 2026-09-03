@@ -87,9 +87,9 @@ func TestDashboardRouteShowsStatistics(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		"Dashboard",
-		`data-stat="member-count">2<`,
-		`data-stat="recent-probe-count">2<`,
+		`data-stat="uptime">`,
 		`data-stat="total-probe-count">3<`,
+		`data-stat="member-count">2<`,
 		`href="/probes"`,
 	} {
 		if !strings.Contains(body, want) {
@@ -98,6 +98,9 @@ func TestDashboardRouteShowsStatistics(t *testing.T) {
 	}
 	if strings.Contains(body, "No probes found.") {
 		t.Fatal("dashboard must not render the probe list empty state")
+	}
+	if strings.Contains(body, "Probes (last 7 days)") || strings.Contains(body, "recent-probe-count") {
+		t.Fatal("dashboard must not contain the removed recent probe metric")
 	}
 }
 

@@ -139,29 +139,25 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 
 		return c.Render(http.StatusOK, "index", map[string]any{
 			"Title": "ARP Monitor",
-			"Stats": newDashboardStats(members, probes, time.Now()),
+			"Stats": newDashboardStats(members, probes, formatUptime(uptime.Get())),
 		})
 	})
 }
 
 type DashboardStats struct {
-	MemberCount      int
-	TotalProbeCount  int
-	RecentProbeCount int
+	Uptime          string
+	TotalProbeCount int
+	MemberCount     int
 }
 
-func newDashboardStats(members []*domain.Member, probes []*domain.Probe, now time.Time) DashboardStats {
-	since := now.Add(-7 * 24 * time.Hour)
-	recentProbeCount := 0
-	for _, probe := range probes {
-		if probe != nil && !probe.CreatedAt.Before(since) && !probe.CreatedAt.After(now) {
-			recentProbeCount++
-		}
-	}
+func formatUptime(value time.Duration) string {
+	return value.Round(time.Second).String()
+}
 
+func newDashboardStats(members []*domain.Member, probes []*domain.Probe, uptimeText string) DashboardStats {
 	return DashboardStats{
-		MemberCount:      len(members),
-		TotalProbeCount:  len(probes),
-		RecentProbeCount: recentProbeCount,
+		Uptime:          uptimeText,
+		TotalProbeCount: len(probes),
+		MemberCount:     len(members),
 	}
 }

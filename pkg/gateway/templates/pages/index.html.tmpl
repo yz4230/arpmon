@@ -17,18 +17,8 @@
     <div class="col-md-4">
       <div class="card h-100 shadow-sm">
         <div class="card-body">
-          <p class="text-body-secondary mb-2">Members</p>
-          <p class="display-5 fw-semibold mb-0" data-stat="member-count">{{ .Stats.MemberCount }}</p>
-          <a class="small" href="/members">Manage members &rarr;</a>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card h-100 shadow-sm">
-        <div class="card-body">
-          <p class="text-body-secondary mb-2">Probes (last 7 days)</p>
-          <p class="display-5 fw-semibold mb-0" data-stat="recent-probe-count">{{ .Stats.RecentProbeCount }}</p>
-          <span class="small text-body-secondary">Based on probe creation time</span>
+          <p class="text-body-secondary mb-2">Uptime</p>
+          <p class="display-5 fw-semibold mb-0" data-stat="uptime">{{ .Stats.Uptime }}</p>
         </div>
       </div>
     </div>
@@ -38,6 +28,15 @@
           <p class="text-body-secondary mb-2">Total probes</p>
           <p class="display-5 fw-semibold mb-0" data-stat="total-probe-count">{{ .Stats.TotalProbeCount }}</p>
           <a class="small" href="/probes">View probe history &rarr;</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <p class="text-body-secondary mb-2">Members</p>
+          <p class="display-5 fw-semibold mb-0" data-stat="member-count">{{ .Stats.MemberCount }}</p>
+          <a class="small" href="/members">Manage members &rarr;</a>
         </div>
       </div>
     </div>

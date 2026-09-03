@@ -28,14 +28,21 @@ func TestFormatDateTimeIncludesAbsoluteAndRelativeTime(t *testing.T) {
 	}
 }
 
+func TestFormatUptimeRoundsToNearestSecond(t *testing.T) {
+	got := formatUptime(time.Minute + 35*time.Second + 713*time.Millisecond)
+	if want := "1m36s"; got != want {
+		t.Fatalf("formatUptime() = %q, want %q", got, want)
+	}
+}
+
 func TestDashboardTemplateIncludesStats(t *testing.T) {
 	var rendered bytes.Buffer
 	err := NewTemplateRenderer().ExecuteTemplate(&rendered, "index", map[string]any{
 		"Title": "ARP Monitor",
 		"Stats": DashboardStats{
-			MemberCount:      3,
-			TotalProbeCount:  12,
-			RecentProbeCount: 5,
+			Uptime:          "12m34s",
+			TotalProbeCount: 12,
+			MemberCount:     3,
 		},
 	})
 	if err != nil {
@@ -45,15 +52,18 @@ func TestDashboardTemplateIncludesStats(t *testing.T) {
 	body := rendered.String()
 	for _, want := range []string{
 		"Dashboard",
-		"Probes (last 7 days)",
-		`data-stat="member-count">3<`,
-		`data-stat="recent-probe-count">5<`,
+		"Uptime",
+		`data-stat="uptime">12m34s<`,
 		`data-stat="total-probe-count">12<`,
+		`data-stat="member-count">3<`,
 		`href="/probes/new"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("rendered dashboard is missing %q", want)
 		}
+	}
+	if strings.Contains(body, "Probes (last 7 days)") || strings.Contains(body, "recent-probe-count") {
+		t.Fatal("rendered dashboard must not contain the removed recent probe metric")
 	}
 }
 
