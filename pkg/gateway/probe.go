@@ -20,6 +20,8 @@ func registerProbeDetailHandler(e *echo.Echo, i *do.Injector) {
 		ctx := c.Request().Context()
 		db := do.MustInvoke[*sql.DB](i)
 		probeRepository := do.MustInvoke[repository.ProbeRepository](i)
+		deviceRepository := do.MustInvoke[repository.DeviceRepository](i)
+		deviceProbeRepository := do.MustInvoke[repository.DeviceProbeRepository](i)
 		memberRepository := do.MustInvoke[repository.MemberRepository](i)
 		memberAttendanceRepository := do.MustInvoke[repository.MemberAttendanceRepository](i)
 
@@ -36,6 +38,14 @@ func registerProbeDetailHandler(e *echo.Echo, i *do.Injector) {
 			}
 			return err
 		}
+		deviceProbes, err := deviceProbeRepository.List(ctx, tx)
+		if err != nil {
+			return err
+		}
+		devices, err := deviceRepository.List(ctx, tx)
+		if err != nil {
+			return err
+		}
 		attendances, err := memberAttendanceRepository.List(ctx, tx)
 		if err != nil {
 			return err
@@ -49,9 +59,10 @@ func registerProbeDetailHandler(e *echo.Echo, i *do.Injector) {
 		}
 
 		return c.Render(http.StatusOK, "probe", map[string]any{
-			"Title":       "Probe",
-			"Probe":       probe,
-			"Attendances": newMemberAttendanceRows(attendances, members, probeID),
+			"Title":        "Probe",
+			"Probe":        probe,
+			"DeviceProbes": newDeviceProbeRows(deviceProbes, devices, probeID),
+			"Attendances":  newMemberAttendanceRows(attendances, members, probeID),
 		})
 	})
 }

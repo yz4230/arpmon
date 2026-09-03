@@ -81,6 +81,17 @@ func (r *dashboardMemberAttendanceRepositoryStub) DeleteByID(_ context.Context, 
 var _ repository.MemberAttendanceRepository = (*dashboardMemberAttendanceRepositoryStub)(nil)
 
 func newGatewayWithDashboardRepositories(t *testing.T, memberRepository repository.MemberRepository, probeRepository repository.ProbeRepository, attendanceRepositories ...repository.MemberAttendanceRepository) (*echo.Echo, *testutil.InMemoryDB) {
+	return newGatewayWithDashboardRepositoriesAndDevices(
+		t,
+		memberRepository,
+		probeRepository,
+		attendanceRepositories,
+		&dashboardDeviceRepositoryStub{},
+		&dashboardDeviceProbeRepositoryStub{},
+	)
+}
+
+func newGatewayWithDashboardRepositoriesAndDevices(t *testing.T, memberRepository repository.MemberRepository, probeRepository repository.ProbeRepository, attendanceRepositories []repository.MemberAttendanceRepository, deviceRepository repository.DeviceRepository, deviceProbeRepository repository.DeviceProbeRepository) (*echo.Echo, *testutil.InMemoryDB) {
 	t.Helper()
 
 	tdb := testutil.NewInMemoryDB()
@@ -88,6 +99,8 @@ func newGatewayWithDashboardRepositories(t *testing.T, memberRepository reposito
 	do.ProvideValue(injector, tdb.Conn)
 	do.ProvideValue(injector, memberRepository)
 	do.ProvideValue(injector, probeRepository)
+	do.ProvideValue(injector, deviceRepository)
+	do.ProvideValue(injector, deviceProbeRepository)
 	if len(attendanceRepositories) > 0 {
 		do.ProvideValue(injector, attendanceRepositories[0])
 	}
@@ -186,7 +199,25 @@ func TestProbeRouteShowsProbeDetails(t *testing.T) {
 		{ID: 2, MemberID: 2, ProbeID: 7, IsPresent: false},
 		{ID: 3, MemberID: 1, ProbeID: 8, IsPresent: false},
 	}}
-	e, tdb := newGatewayWithDashboardRepositories(t, memberRepository, probeRepository, attendanceRepository)
+	deviceMAC, err := net.ParseMAC("00:11:22:33:44:55")
+	if err != nil {
+		t.Fatal(err)
+	}
+	otherDeviceMAC, err := net.ParseMAC("aa:bb:cc:dd:ee:ff")
+	if err != nil {
+		t.Fatal(err)
+	}
+	probeDeviceRepository := &dashboardDeviceRepositoryStub{devices: []*domain.Device{
+		{ID: 10, MACAddress: deviceMAC},
+		{ID: 11, MACAddress: otherDeviceMAC},
+		{ID: 12, MACAddress: net.HardwareAddr{0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc}},
+	}}
+	deviceProbeRepository := &dashboardDeviceProbeRepositoryStub{probes: []*domain.DeviceProbe{
+		{ID: 1, DeviceID: 10, ProbeID: 7, IsPresent: true},
+		{ID: 2, DeviceID: 11, ProbeID: 7, IsPresent: false},
+		{ID: 3, DeviceID: 12, ProbeID: 8, IsPresent: true},
+	}}
+	e, tdb := newGatewayWithDashboardRepositoriesAndDevices(t, memberRepository, probeRepository, []repository.MemberAttendanceRepository{attendanceRepository}, probeDeviceRepository, deviceProbeRepository)
 	t.Cleanup(func() { _ = tdb.Close() })
 
 	recorder := httptest.NewRecorder()
@@ -205,6 +236,13 @@ func TestProbeRouteShowsProbeDetails(t *testing.T) {
 		"Present",
 		"Not Present",
 		`<th scope="col">Member</th>`,
+		"Device probes",
+		deviceMAC.String(),
+		otherDeviceMAC.String(),
+		`<th scope="col">MAC address</th>`,
+		`<th scope="col">Visibility</th>`,
+		`<span class="badge text-bg-success">Visible</span>`,
+		`<span class="badge text-bg-secondary">Not visible</span>`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("probe detail body is missing %q", want)
@@ -212,6 +250,12 @@ func TestProbeRouteShowsProbeDetails(t *testing.T) {
 	}
 	if strings.Contains(body, `<th scope="col">Recorded</th>`) {
 		t.Error("probe detail body includes the removed Recorded column")
+	}
+	if strings.Contains(body, "12:34:56:78:9a:bc") {
+		t.Error("probe detail body includes a device probe from another probe")
+	}
+	if strings.Index(body, "Member attendance") > strings.Index(body, "Device probes") {
+		t.Error("device probes appear before member attendance")
 	}
 }
 

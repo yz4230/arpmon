@@ -17,7 +17,7 @@
     </div>
   </div>
 
-  <div class="card shadow-sm">
+  <div class="card shadow-sm mb-4">
     <div class="card-header">
       <h2 class="h5 mb-0">Member attendance</h2>
     </div>
@@ -49,6 +49,42 @@
       </div>
       {{ else }}
       <p class="text-body-secondary mb-0">No member attendance was recorded for this probe.</p>
+      {{ end }}
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-header">
+      <h2 class="h5 mb-0">Device probes</h2>
+    </div>
+    <div class="card-body">
+      {{ if .DeviceProbes }}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">MAC address</th>
+              <th scope="col">Visibility</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ range .DeviceProbes }}
+            <tr>
+              <th scope="row"><code>{{ .MACAddress }}</code></th>
+              <td>
+                {{ if .IsPresent }}
+                <span class="badge text-bg-success">Visible</span>
+                {{ else }}
+                <span class="badge text-bg-secondary">Not visible</span>
+                {{ end }}
+              </td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+      {{ else }}
+      <p class="text-body-secondary mb-0">No device probes were recorded for this probe.</p>
       {{ end }}
     </div>
   </div>
