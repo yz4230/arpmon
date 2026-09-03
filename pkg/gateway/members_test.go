@@ -82,7 +82,7 @@ func newGatewayWithMemberRepository(t *testing.T, memberRepository repository.Me
 	injector := do.New()
 	do.ProvideValue(injector, tdb.Conn)
 	do.ProvideValue(injector, memberRepository)
-	do.ProvideValue(injector, usecase.ProbeUseCase(&probeUseCaseStub{}))
+	do.ProvideValue(injector, usecase.ScanRunUseCase(&scanRunUseCaseStub{}))
 	e := echo.New()
 	RegisterHandlers(e, injector)
 	return e, tdb
@@ -119,7 +119,7 @@ func TestMemberCRUDRoutes(t *testing.T) {
 	if !strings.Contains(listRecorder.Body.String(), "Alice") {
 		t.Fatalf("member list body = %q, want Alice", listRecorder.Body.String())
 	}
-	if !strings.Contains(listRecorder.Body.String(), "Member created successfully. It will appear in the attendance checklist before the next probe.") {
+	if !strings.Contains(listRecorder.Body.String(), "Member created successfully. It will appear in the attendance checklist before the next scan.") {
 		t.Fatalf("member list body = %q, want create banner", listRecorder.Body.String())
 	}
 
@@ -165,7 +165,7 @@ func TestMemberAttendancesFromRequest(t *testing.T) {
 		"member_ids":         {"1", "2", "2"},
 		"present_member_ids": {"2"},
 	}
-	r := formRequest(http.MethodPost, "/probes", form)
+	r := formRequest(http.MethodPost, "/scanRuns", form)
 
 	got, err := memberAttendancesFromRequest(r)
 	if err != nil {
@@ -188,7 +188,7 @@ func TestMemberAttendancesFromRequestParsesPresenceChoices(t *testing.T) {
 		"member_presence_1": {"Not Present"},
 		"member_presence_2": {"Present"},
 	}
-	r := formRequest(http.MethodPost, "/probes", form)
+	r := formRequest(http.MethodPost, "/scanRuns", form)
 
 	got, err := memberAttendancesFromRequest(r)
 	if err != nil {

@@ -44,7 +44,7 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 		return c.JSON(http.StatusOK, health)
 	})
 
-	e.GET("/probes/new", func(c *echo.Context) error {
+	newScanRunHandler := func(c *echo.Context) error {
 		db := do.MustInvoke[*sql.DB](i)
 		memberRepository := do.MustInvoke[repository.MemberRepository](i)
 		ctx := c.Request().Context()
@@ -62,15 +62,17 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 			return err
 		}
 
-		return c.Render(http.StatusOK, "new-probe", map[string]any{
-			"Title":   "New probe",
+		return c.Render(http.StatusOK, "new-scan-run", map[string]any{
+			"Title":   "New scan run",
 			"Members": members,
 		})
-	})
+	}
+	e.GET("/scan-runs/new", newScanRunHandler)
+	e.GET("/probes/new", newScanRunHandler)
 
-	e.GET("/probes", func(c *echo.Context) error {
+	listScanRunsHandler := func(c *echo.Context) error {
 		db := do.MustInvoke[*sql.DB](i)
-		probeRepository := do.MustInvoke[repository.ProbeRepository](i)
+		scanRunRepository := do.MustInvoke[repository.ScanRunRepository](i)
 		ctx := c.Request().Context()
 		tx, err := db.BeginTx(ctx, nil)
 		if err != nil {
@@ -78,7 +80,7 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 		}
 		defer tx.Rollback()
 
-		probes, err := probeRepository.List(ctx, tx)
+		scanRuns, err := scanRunRepository.List(ctx, tx)
 		if err != nil {
 			return err
 		}
@@ -86,13 +88,15 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 			return err
 		}
 
-		return c.Render(http.StatusOK, "probes", map[string]any{
-			"Title":  "Probes",
-			"Probes": probes,
+		return c.Render(http.StatusOK, "scan-runs", map[string]any{
+			"Title":    "Scan runs",
+			"ScanRuns": scanRuns,
 		})
-	})
+	}
+	e.GET("/scan-runs", listScanRunsHandler)
+	e.GET("/probes", listScanRunsHandler)
 
-	e.POST("/probes", func(c *echo.Context) error {
+	runScanHandler := func(c *echo.Context) error {
 		_, target, err := net.ParseCIDR(strings.TrimSpace(c.FormValue("target")))
 		if err != nil {
 			return c.String(http.StatusBadRequest, "Target must be a valid CIDR, for example 192.168.1.0/24.")
@@ -102,15 +106,15 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 			return c.String(http.StatusBadRequest, "Member selection contains an invalid member ID.")
 		}
 
-		probeUseCase := do.MustInvoke[usecase.ProbeUseCase](i)
-		probe, err := probeUseCase.Do(c.Request().Context(), target, members)
+		scanRunUseCase := do.MustInvoke[usecase.ScanRunUseCase](i)
+		scanRun, err := scanRunUseCase.Do(c.Request().Context(), target, members)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run probe").Wrap(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run scan").Wrap(err)
 		}
-		if probe == nil || probe.ID <= 0 {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Probe did not return an ID")
+		if scanRun == nil || scanRun.ID <= 0 {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Scan run did not return an ID")
 		}
-		location := "/probes/" + strconv.Itoa(probe.ID)
+		location := "/scan-runs/" + strconv.Itoa(scanRun.ID)
 
 		if c.Request().Header.Get("HX-Request") == "true" {
 			c.Response().Header().Set("HX-Redirect", location)
@@ -118,13 +122,15 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 		}
 
 		return c.Redirect(http.StatusSeeOther, location)
-	})
+	}
+	e.POST("/scan-runs", runScanHandler)
+	e.POST("/probes", runScanHandler)
 
-	registerProbeDetailHandler(e, i)
+	registerScanRunDetailHandler(e, i)
 
 	e.GET("/", func(c *echo.Context) error {
 		db := do.MustInvoke[*sql.DB](i)
-		probeRepository := do.MustInvoke[repository.ProbeRepository](i)
+		scanRunRepository := do.MustInvoke[repository.ScanRunRepository](i)
 		memberRepository := do.MustInvoke[repository.MemberRepository](i)
 		ctx := c.Request().Context()
 		tx, err := db.BeginTx(ctx, nil)
@@ -133,7 +139,7 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 		}
 		defer tx.Rollback()
 
-		probes, err := probeRepository.List(ctx, tx)
+		scanRuns, err := scanRunRepository.List(ctx, tx)
 		if err != nil {
 			return err
 		}
@@ -147,25 +153,25 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 
 		return c.Render(http.StatusOK, "index", map[string]any{
 			"Title": "ARP Monitor",
-			"Stats": newDashboardStats(members, probes, formatUptime(uptime.Get())),
+			"Stats": newDashboardStats(members, scanRuns, formatUptime(uptime.Get())),
 		})
 	})
 }
 
 type DashboardStats struct {
-	Uptime          string
-	TotalProbeCount int
-	MemberCount     int
+	Uptime            string
+	TotalScanRunCount int
+	MemberCount       int
 }
 
 func formatUptime(value time.Duration) string {
 	return value.Round(time.Second).String()
 }
 
-func newDashboardStats(members []*domain.Member, probes []*domain.Probe, uptimeText string) DashboardStats {
+func newDashboardStats(members []*domain.Member, scanRuns []*domain.ScanRun, uptimeText string) DashboardStats {
 	return DashboardStats{
-		Uptime:          uptimeText,
-		TotalProbeCount: len(probes),
-		MemberCount:     len(members),
+		Uptime:            uptimeText,
+		TotalScanRunCount: len(scanRuns),
+		MemberCount:       len(members),
 	}
 }

@@ -135,7 +135,7 @@ func registerMemberHandlers(e *echo.Echo, i *do.Injector) {
 func memberSuccessMessage(status string) string {
 	switch status {
 	case "created":
-		return "Member created successfully. It will appear in the attendance checklist before the next probe."
+		return "Member created successfully. It will appear in the attendance checklist before the next scan."
 	case "updated":
 		return "Member updated successfully. Future attendance checklists will use the new name."
 	case "deleted":

@@ -14,15 +14,15 @@ type memberAttendanceRow struct {
 	IsPresent  bool
 }
 
-func parseProbeID(c *echo.Context) (int, error) {
+func parseScanRunID(c *echo.Context) (int, error) {
 	id, err := strconv.Atoi(strings.TrimSpace(c.Param("id")))
 	if err != nil || id <= 0 {
-		return 0, fmt.Errorf("invalid probe id")
+		return 0, fmt.Errorf("invalid scan run id")
 	}
 	return id, nil
 }
 
-func newMemberAttendanceRows(attendances []*domain.MemberAttendance, members []*domain.Member, probeID int) []memberAttendanceRow {
+func newMemberAttendanceRows(attendances []*domain.MemberAttendance, members []*domain.Member, scanRunID int) []memberAttendanceRow {
 	memberNames := make(map[int]string, len(members))
 	for _, member := range members {
 		memberNames[member.ID] = member.Name
@@ -30,7 +30,7 @@ func newMemberAttendanceRows(attendances []*domain.MemberAttendance, members []*
 
 	rows := make([]memberAttendanceRow, 0, len(attendances))
 	for _, attendance := range attendances {
-		if attendance == nil || attendance.ProbeID != probeID {
+		if attendance == nil || attendance.ScanRunID != scanRunID {
 			continue
 		}
 

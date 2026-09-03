@@ -18,32 +18,32 @@ import (
 	"github.com/yz4230/arpmon/pkg/usecase"
 )
 
-type dashboardProbeRepositoryStub struct {
-	probes []*domain.Probe
+type dashboardScanRunRepositoryStub struct {
+	scanRuns []*domain.ScanRun
 }
 
-func (r *dashboardProbeRepositoryStub) Create(_ context.Context, _ *sql.Tx, probe *domain.Probe) (*domain.Probe, error) {
-	return probe, nil
+func (r *dashboardScanRunRepositoryStub) Create(_ context.Context, _ *sql.Tx, scanRun *domain.ScanRun) (*domain.ScanRun, error) {
+	return scanRun, nil
 }
 
-func (r *dashboardProbeRepositoryStub) GetByID(_ context.Context, _ *sql.Tx, id int) (*domain.Probe, error) {
-	for _, probe := range r.probes {
-		if probe.ID == id {
-			return probe, nil
+func (r *dashboardScanRunRepositoryStub) GetByID(_ context.Context, _ *sql.Tx, id int) (*domain.ScanRun, error) {
+	for _, scanRun := range r.scanRuns {
+		if scanRun.ID == id {
+			return scanRun, nil
 		}
 	}
 	return nil, sql.ErrNoRows
 }
 
-func (r *dashboardProbeRepositoryStub) List(_ context.Context, _ *sql.Tx) ([]*domain.Probe, error) {
-	return r.probes, nil
+func (r *dashboardScanRunRepositoryStub) List(_ context.Context, _ *sql.Tx) ([]*domain.ScanRun, error) {
+	return r.scanRuns, nil
 }
 
-func (r *dashboardProbeRepositoryStub) DeleteByID(_ context.Context, _ *sql.Tx, _ int) error {
+func (r *dashboardScanRunRepositoryStub) DeleteByID(_ context.Context, _ *sql.Tx, _ int) error {
 	return nil
 }
 
-var _ repository.ProbeRepository = (*dashboardProbeRepositoryStub)(nil)
+var _ repository.ScanRunRepository = (*dashboardScanRunRepositoryStub)(nil)
 
 type dashboardMemberAttendanceRepositoryStub struct {
 	attendances []*domain.MemberAttendance
@@ -80,31 +80,31 @@ func (r *dashboardMemberAttendanceRepositoryStub) DeleteByID(_ context.Context, 
 
 var _ repository.MemberAttendanceRepository = (*dashboardMemberAttendanceRepositoryStub)(nil)
 
-func newGatewayWithDashboardRepositories(t *testing.T, memberRepository repository.MemberRepository, probeRepository repository.ProbeRepository, attendanceRepositories ...repository.MemberAttendanceRepository) (*echo.Echo, *testutil.InMemoryDB) {
+func newGatewayWithDashboardRepositories(t *testing.T, memberRepository repository.MemberRepository, scanRunRepository repository.ScanRunRepository, attendanceRepositories ...repository.MemberAttendanceRepository) (*echo.Echo, *testutil.InMemoryDB) {
 	return newGatewayWithDashboardRepositoriesAndDevices(
 		t,
 		memberRepository,
-		probeRepository,
+		scanRunRepository,
 		attendanceRepositories,
 		&dashboardDeviceRepositoryStub{},
-		&dashboardDeviceProbeRepositoryStub{},
+		&dashboardDeviceObservationRepositoryStub{},
 	)
 }
 
-func newGatewayWithDashboardRepositoriesAndDevices(t *testing.T, memberRepository repository.MemberRepository, probeRepository repository.ProbeRepository, attendanceRepositories []repository.MemberAttendanceRepository, deviceRepository repository.DeviceRepository, deviceProbeRepository repository.DeviceProbeRepository) (*echo.Echo, *testutil.InMemoryDB) {
+func newGatewayWithDashboardRepositoriesAndDevices(t *testing.T, memberRepository repository.MemberRepository, scanRunRepository repository.ScanRunRepository, attendanceRepositories []repository.MemberAttendanceRepository, deviceRepository repository.DeviceRepository, deviceObservationRepository repository.DeviceObservationRepository) (*echo.Echo, *testutil.InMemoryDB) {
 	t.Helper()
 
 	tdb := testutil.NewInMemoryDB()
 	injector := do.New()
 	do.ProvideValue(injector, tdb.Conn)
 	do.ProvideValue(injector, memberRepository)
-	do.ProvideValue(injector, probeRepository)
+	do.ProvideValue(injector, scanRunRepository)
 	do.ProvideValue(injector, deviceRepository)
-	do.ProvideValue(injector, deviceProbeRepository)
+	do.ProvideValue(injector, deviceObservationRepository)
 	if len(attendanceRepositories) > 0 {
 		do.ProvideValue(injector, attendanceRepositories[0])
 	}
-	do.ProvideValue(injector, usecase.ProbeUseCase(&probeUseCaseStub{}))
+	do.ProvideValue(injector, usecase.ScanRunUseCase(&scanRunUseCaseStub{}))
 	e := echo.New()
 	RegisterHandlers(e, injector)
 	return e, tdb
@@ -121,12 +121,12 @@ func TestDashboardRouteShowsStatistics(t *testing.T) {
 		{ID: 1, Name: "Alice"},
 		{ID: 2, Name: "Bob"},
 	}}
-	probeRepository := &dashboardProbeRepositoryStub{probes: []*domain.Probe{
-		{ID: 1, Target: target, CreatedAt: now.Add(-2 * 24 * time.Hour)},
-		{ID: 2, Target: target, CreatedAt: now.Add(-6 * 24 * time.Hour)},
-		{ID: 3, Target: target, CreatedAt: now.Add(-8 * 24 * time.Hour)},
+	scanRunRepository := &dashboardScanRunRepositoryStub{scanRuns: []*domain.ScanRun{
+		{ID: 1, TargetNetwork: target, CreatedAt: now.Add(-2 * 24 * time.Hour)},
+		{ID: 2, TargetNetwork: target, CreatedAt: now.Add(-6 * 24 * time.Hour)},
+		{ID: 3, TargetNetwork: target, CreatedAt: now.Add(-8 * 24 * time.Hour)},
 	}}
-	e, tdb := newGatewayWithDashboardRepositories(t, memberRepository, probeRepository)
+	e, tdb := newGatewayWithDashboardRepositories(t, memberRepository, scanRunRepository)
 	t.Cleanup(func() { _ = tdb.Close() })
 
 	recorder := httptest.NewRecorder()
@@ -139,51 +139,51 @@ func TestDashboardRouteShowsStatistics(t *testing.T) {
 	for _, want := range []string{
 		"Dashboard",
 		`data-stat="uptime">`,
-		`data-stat="total-probe-count">3<`,
+		`data-stat="total-scan-run-count">3<`,
 		`data-stat="member-count">2<`,
-		`href="/probes"`,
+		`href="/scan-runs"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("dashboard body is missing %q", want)
 		}
 	}
-	if strings.Contains(body, "No probes found.") {
-		t.Fatal("dashboard must not render the probe list empty state")
+	if strings.Contains(body, "No scanRuns found.") {
+		t.Fatal("dashboard must not render the scan run list empty state")
 	}
-	if strings.Contains(body, "Probes (last 7 days)") || strings.Contains(body, "recent-probe-count") {
-		t.Fatal("dashboard must not contain the removed recent probe metric")
+	if strings.Contains(body, "Scan runs (last 7 days)") || strings.Contains(body, "recent-scan-run-count") {
+		t.Fatal("dashboard must not contain the removed recent scan-run metric")
 	}
 }
 
-func TestProbesRouteShowsProbeHistory(t *testing.T) {
+func TestScanRunsRouteShowsHistory(t *testing.T) {
 	_, target, err := net.ParseCIDR("192.168.1.0/24")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	memberRepository := &memberRepositoryStub{}
-	probeRepository := &dashboardProbeRepositoryStub{probes: []*domain.Probe{{ID: 1, Target: target}}}
-	e, tdb := newGatewayWithDashboardRepositories(t, memberRepository, probeRepository)
+	scanRunRepository := &dashboardScanRunRepositoryStub{scanRuns: []*domain.ScanRun{{ID: 1, TargetNetwork: target}}}
+	e, tdb := newGatewayWithDashboardRepositories(t, memberRepository, scanRunRepository)
 	t.Cleanup(func() { _ = tdb.Close() })
 
 	recorder := httptest.NewRecorder()
-	e.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/probes", nil))
+	e.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/scan-runs", nil))
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
 	}
 	body := recorder.Body.String()
-	for _, want := range []string{"Probes", "192.168.1.0/24", `href="/probes/1"`, `href="/probes/new"`} {
+	for _, want := range []string{"Scan runs", "192.168.1.0/24", `href="/scan-runs/1"`, `href="/scan-runs/new"`} {
 		if !strings.Contains(body, want) {
-			t.Errorf("probe history body is missing %q", want)
+			t.Errorf("scan run history body is missing %q", want)
 		}
 	}
 	if strings.Contains(body, `<th scope="col">Updated</th>`) {
-		t.Error("probe history body includes the removed Updated column")
+		t.Error("scan run history body includes the removed Updated column")
 	}
 }
 
-func TestProbeRouteShowsProbeDetails(t *testing.T) {
+func TestScanRunRouteShowsDetails(t *testing.T) {
 	_, target, err := net.ParseCIDR("192.168.1.0/24")
 	if err != nil {
 		t.Fatal(err)
@@ -193,11 +193,11 @@ func TestProbeRouteShowsProbeDetails(t *testing.T) {
 		{ID: 1, Name: "Alice"},
 		{ID: 2, Name: "Bob"},
 	}}
-	probeRepository := &dashboardProbeRepositoryStub{probes: []*domain.Probe{{ID: 7, Target: target}}}
+	scanRunRepository := &dashboardScanRunRepositoryStub{scanRuns: []*domain.ScanRun{{ID: 7, TargetNetwork: target}}}
 	attendanceRepository := &dashboardMemberAttendanceRepositoryStub{attendances: []*domain.MemberAttendance{
-		{ID: 1, MemberID: 1, ProbeID: 7, IsPresent: true},
-		{ID: 2, MemberID: 2, ProbeID: 7, IsPresent: false},
-		{ID: 3, MemberID: 1, ProbeID: 8, IsPresent: false},
+		{ID: 1, MemberID: 1, ScanRunID: 7, IsPresent: true},
+		{ID: 2, MemberID: 2, ScanRunID: 7, IsPresent: false},
+		{ID: 3, MemberID: 1, ScanRunID: 8, IsPresent: false},
 	}}
 	deviceMAC, err := net.ParseMAC("00:11:22:33:44:55")
 	if err != nil {
@@ -212,23 +212,23 @@ func TestProbeRouteShowsProbeDetails(t *testing.T) {
 		{ID: 11, MACAddress: otherDeviceMAC},
 		{ID: 12, MACAddress: net.HardwareAddr{0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc}},
 	}}
-	deviceProbeRepository := &dashboardDeviceProbeRepositoryStub{probes: []*domain.DeviceProbe{
-		{ID: 1, DeviceID: 10, ProbeID: 7, IsPresent: true},
-		{ID: 2, DeviceID: 11, ProbeID: 7, IsPresent: false},
-		{ID: 3, DeviceID: 12, ProbeID: 8, IsPresent: true},
+	deviceObservationRepository := &dashboardDeviceObservationRepositoryStub{scanRuns: []*domain.DeviceObservation{
+		{ID: 1, DeviceID: 10, ScanRunID: 7, IPAddress: net.ParseIP("192.168.1.10")},
+		{ID: 2, DeviceID: 11, ScanRunID: 7, IPAddress: net.ParseIP("192.168.1.11")},
+		{ID: 3, DeviceID: 12, ScanRunID: 8, IPAddress: net.ParseIP("192.168.1.10")},
 	}}
-	e, tdb := newGatewayWithDashboardRepositoriesAndDevices(t, memberRepository, probeRepository, []repository.MemberAttendanceRepository{attendanceRepository}, probeDeviceRepository, deviceProbeRepository)
+	e, tdb := newGatewayWithDashboardRepositoriesAndDevices(t, memberRepository, scanRunRepository, []repository.MemberAttendanceRepository{attendanceRepository}, probeDeviceRepository, deviceObservationRepository)
 	t.Cleanup(func() { _ = tdb.Close() })
 
 	recorder := httptest.NewRecorder()
-	e.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/probes/7", nil))
+	e.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/scan-runs/7", nil))
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
 	}
 	body := recorder.Body.String()
 	for _, want := range []string{
-		"Probe #7",
+		"Scan run #7",
 		"192.168.1.0/24",
 		"Member attendance",
 		"Alice",
@@ -236,47 +236,47 @@ func TestProbeRouteShowsProbeDetails(t *testing.T) {
 		"Present",
 		"Not Present",
 		`<th scope="col">Member</th>`,
-		"Device probes",
+		"Device observations",
 		deviceMAC.String(),
 		otherDeviceMAC.String(),
 		`<th scope="col">MAC address</th>`,
-		`<th scope="col">Visibility</th>`,
-		`<span class="badge text-bg-success">Visible</span>`,
-		`<span class="badge text-bg-secondary">Not visible</span>`,
+		`<th scope="col">IP address</th>`,
+		`<code>192.168.1.10</code>`,
+		`<code>192.168.1.11</code>`,
 	} {
 		if !strings.Contains(body, want) {
-			t.Errorf("probe detail body is missing %q", want)
+			t.Errorf("scan run detail body is missing %q", want)
 		}
 	}
 	if strings.Contains(body, `<th scope="col">Recorded</th>`) {
-		t.Error("probe detail body includes the removed Recorded column")
+		t.Error("scan run detail body includes the removed Recorded column")
 	}
 	if strings.Contains(body, "12:34:56:78:9a:bc") {
-		t.Error("probe detail body includes a device probe from another probe")
+		t.Error("scan run detail body includes a device scanRun from another scanRun")
 	}
-	if strings.Index(body, "Member attendance") > strings.Index(body, "Device probes") {
-		t.Error("device probes appear before member attendance")
+	if strings.Index(body, "Member attendance") > strings.Index(body, "Device observations") {
+		t.Error("device scanRuns appear before member attendance")
 	}
 }
 
-func TestNewProbeRouteShowsStandalonePage(t *testing.T) {
+func TestNewScanRunRouteShowsStandalonePage(t *testing.T) {
 	memberRepository := &memberRepositoryStub{members: []*domain.Member{{ID: 1, Name: "Alice"}}}
 	e, tdb := newGatewayWithMemberRepository(t, memberRepository)
 	t.Cleanup(func() { _ = tdb.Close() })
 
 	recorder := httptest.NewRecorder()
-	e.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/probes/new", nil))
+	e.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/scan-runs/new", nil))
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
 	}
 	body := recorder.Body.String()
-	for _, want := range []string{"Run a new probe", "Alice", `action="/probes" method="post"`} {
+	for _, want := range []string{"Run a new scan", "Alice", `action="/scan-runs" method="post"`} {
 		if !strings.Contains(body, want) {
-			t.Errorf("new probe body is missing %q", want)
+			t.Errorf("new scanRun body is missing %q", want)
 		}
 	}
 	if strings.Contains(body, "modal") || strings.Contains(body, "data-bs-toggle") {
-		t.Fatal("new probe page must not render modal controls")
+		t.Fatal("new scan run page must not render modal controls")
 	}
 }

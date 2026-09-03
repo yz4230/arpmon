@@ -20,7 +20,7 @@ type MemberAttendance struct {
 	Timestamp
 	ID        int
 	MemberID  int
-	ProbeID   int
+	ScanRunID int
 	IsPresent bool
 }
 
@@ -30,16 +30,16 @@ type Device struct {
 	MACAddress net.HardwareAddr
 }
 
-type Probe struct {
+type ScanRun struct {
 	Timestamp
-	ID     int
-	Target *net.IPNet
+	ID            int
+	TargetNetwork *net.IPNet
 }
 
-type DeviceProbe struct {
+type DeviceObservation struct {
 	Timestamp
 	ID        int
 	DeviceID  int
-	ProbeID   int
-	IsPresent bool
+	ScanRunID int
+	IPAddress net.IP
 }

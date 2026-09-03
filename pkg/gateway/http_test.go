@@ -16,42 +16,42 @@ import (
 	"github.com/yz4230/arpmon/pkg/usecase"
 )
 
-type probeUseCaseStub struct {
+type scanRunUseCaseStub struct {
 	target  *net.IPNet
 	members []*domain.MemberAttendance
-	probe   *domain.Probe
+	scanRun *domain.ScanRun
 	calls   int
 	err     error
 }
 
-func (s *probeUseCaseStub) Do(_ context.Context, target *net.IPNet, members []*domain.MemberAttendance) (*domain.Probe, error) {
+func (s *scanRunUseCaseStub) Do(_ context.Context, target *net.IPNet, members []*domain.MemberAttendance) (*domain.ScanRun, error) {
 	s.calls++
 	s.target = target
 	s.members = members
-	if s.probe == nil {
-		s.probe = &domain.Probe{ID: 1, Target: target}
+	if s.scanRun == nil {
+		s.scanRun = &domain.ScanRun{ID: 1, TargetNetwork: target}
 	}
-	return s.probe, s.err
+	return s.scanRun, s.err
 }
 
-var _ usecase.ProbeUseCase = (*probeUseCaseStub)(nil)
+var _ usecase.ScanRunUseCase = (*scanRunUseCaseStub)(nil)
 
-func newGatewayWithProbeUseCase(t *testing.T, probeUseCase usecase.ProbeUseCase) *echo.Echo {
+func newGatewayWithScanRunUseCase(t *testing.T, scanRunUseCase usecase.ScanRunUseCase) *echo.Echo {
 	t.Helper()
 
 	injector := do.New()
-	do.ProvideValue(injector, probeUseCase)
+	do.ProvideValue(injector, scanRunUseCase)
 	e := echo.New()
 	RegisterHandlers(e, injector)
 	return e
 }
 
-func newProbeRequest(target string) *http.Request {
+func newScanRunRequest(target string) *http.Request {
 	form := url.Values{"target": {target}}
-	return newProbeRequestWithForm(form)
+	return newScanRunRequestWithForm(form)
 }
 
-func newProbeRequestWithMembers(target string, memberIDs, presentMemberIDs []int) *http.Request {
+func newScanRunRequestWithMembers(target string, memberIDs, presentMemberIDs []int) *http.Request {
 	form := url.Values{"target": {target}}
 	for _, id := range memberIDs {
 		form.Add("member_ids", strconv.Itoa(id))
@@ -59,19 +59,19 @@ func newProbeRequestWithMembers(target string, memberIDs, presentMemberIDs []int
 	for _, id := range presentMemberIDs {
 		form.Add("present_member_ids", strconv.Itoa(id))
 	}
-	return newProbeRequestWithForm(form)
+	return newScanRunRequestWithForm(form)
 }
 
-func newProbeRequestWithForm(form url.Values) *http.Request {
-	req := httptest.NewRequest(http.MethodPost, "/probes", strings.NewReader(form.Encode()))
+func newScanRunRequestWithForm(form url.Values) *http.Request {
+	req := httptest.NewRequest(http.MethodPost, "/scan-runs", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	return req
 }
 
-func TestRunProbe(t *testing.T) {
-	probeUseCase := &probeUseCaseStub{probe: &domain.Probe{ID: 42}}
-	e := newGatewayWithProbeUseCase(t, probeUseCase)
-	req := newProbeRequest(" 192.168.1.1/24 ")
+func TestRunScanRun(t *testing.T) {
+	scanRunUseCase := &scanRunUseCaseStub{scanRun: &domain.ScanRun{ID: 42}}
+	e := newGatewayWithScanRunUseCase(t, scanRunUseCase)
+	req := newScanRunRequest(" 192.168.1.1/24 ")
 	recorder := httptest.NewRecorder()
 
 	e.ServeHTTP(recorder, req)
@@ -79,24 +79,24 @@ func TestRunProbe(t *testing.T) {
 	if recorder.Code != http.StatusSeeOther {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusSeeOther)
 	}
-	if got := recorder.Header().Get("Location"); got != "/probes/42" {
-		t.Fatalf("Location = %q, want %q", got, "/probes/42")
+	if got := recorder.Header().Get("Location"); got != "/scan-runs/42" {
+		t.Fatalf("Location = %q, want %q", got, "/scan-runs/42")
 	}
-	if probeUseCase.calls != 1 {
-		t.Fatalf("DoARPScan calls = %d, want 1", probeUseCase.calls)
+	if scanRunUseCase.calls != 1 {
+		t.Fatalf("DoARPScan calls = %d, want 1", scanRunUseCase.calls)
 	}
-	if got := probeUseCase.target.String(); got != "192.168.1.0/24" {
+	if got := scanRunUseCase.target.String(); got != "192.168.1.0/24" {
 		t.Fatalf("target = %q, want %q", got, "192.168.1.0/24")
 	}
-	if len(probeUseCase.members) != 0 {
-		t.Fatalf("members = %v, want no members", probeUseCase.members)
+	if len(scanRunUseCase.members) != 0 {
+		t.Fatalf("members = %v, want no members", scanRunUseCase.members)
 	}
 }
 
-func TestRunProbePassesMemberAttendance(t *testing.T) {
-	probeUseCase := &probeUseCaseStub{}
-	e := newGatewayWithProbeUseCase(t, probeUseCase)
-	req := newProbeRequestWithMembers("192.168.1.0/24", []int{1, 2}, []int{2})
+func TestRunScanRunPassesMemberAttendance(t *testing.T) {
+	scanRunUseCase := &scanRunUseCaseStub{}
+	e := newGatewayWithScanRunUseCase(t, scanRunUseCase)
+	req := newScanRunRequestWithMembers("192.168.1.0/24", []int{1, 2}, []int{2})
 	recorder := httptest.NewRecorder()
 
 	e.ServeHTTP(recorder, req)
@@ -104,27 +104,27 @@ func TestRunProbePassesMemberAttendance(t *testing.T) {
 	if recorder.Code != http.StatusSeeOther {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusSeeOther)
 	}
-	if len(probeUseCase.members) != 2 {
-		t.Fatalf("members = %d, want 2", len(probeUseCase.members))
+	if len(scanRunUseCase.members) != 2 {
+		t.Fatalf("members = %d, want 2", len(scanRunUseCase.members))
 	}
-	if got := probeUseCase.members[0]; got.MemberID != 1 || got.IsPresent {
+	if got := scanRunUseCase.members[0]; got.MemberID != 1 || got.IsPresent {
 		t.Fatalf("first attendance = %#v, want member 1 absent", got)
 	}
-	if got := probeUseCase.members[1]; got.MemberID != 2 || !got.IsPresent {
+	if got := scanRunUseCase.members[1]; got.MemberID != 2 || !got.IsPresent {
 		t.Fatalf("second attendance = %#v, want member 2 present", got)
 	}
 }
 
-func TestRunProbePassesMemberPresenceChoices(t *testing.T) {
-	probeUseCase := &probeUseCaseStub{}
-	e := newGatewayWithProbeUseCase(t, probeUseCase)
+func TestRunScanRunPassesMemberPresenceChoices(t *testing.T) {
+	scanRunUseCase := &scanRunUseCaseStub{}
+	e := newGatewayWithScanRunUseCase(t, scanRunUseCase)
 	form := url.Values{
 		"target":            {"192.168.1.0/24"},
 		"member_ids":        {"1", "2"},
 		"member_presence_1": {"not_present"},
 		"member_presence_2": {"present"},
 	}
-	req := newProbeRequestWithForm(form)
+	req := newScanRunRequestWithForm(form)
 	recorder := httptest.NewRecorder()
 
 	e.ServeHTTP(recorder, req)
@@ -132,22 +132,22 @@ func TestRunProbePassesMemberPresenceChoices(t *testing.T) {
 	if recorder.Code != http.StatusSeeOther {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusSeeOther)
 	}
-	if len(probeUseCase.members) != 2 {
-		t.Fatalf("members = %d, want 2", len(probeUseCase.members))
+	if len(scanRunUseCase.members) != 2 {
+		t.Fatalf("members = %d, want 2", len(scanRunUseCase.members))
 	}
-	if got := probeUseCase.members[0]; got.MemberID != 1 || got.IsPresent {
+	if got := scanRunUseCase.members[0]; got.MemberID != 1 || got.IsPresent {
 		t.Fatalf("first attendance = %#v, want member 1 absent", got)
 	}
-	if got := probeUseCase.members[1]; got.MemberID != 2 || !got.IsPresent {
+	if got := scanRunUseCase.members[1]; got.MemberID != 2 || !got.IsPresent {
 		t.Fatalf("second attendance = %#v, want member 2 present", got)
 	}
 }
 
-func TestRunProbeRejectsInvalidMemberID(t *testing.T) {
-	probeUseCase := &probeUseCaseStub{}
-	e := newGatewayWithProbeUseCase(t, probeUseCase)
+func TestRunScanRunRejectsInvalidMemberID(t *testing.T) {
+	scanRunUseCase := &scanRunUseCaseStub{}
+	e := newGatewayWithScanRunUseCase(t, scanRunUseCase)
 	form := url.Values{"target": {"192.168.1.0/24"}, "member_ids": {"not-an-id"}}
-	req := newProbeRequestWithForm(form)
+	req := newScanRunRequestWithForm(form)
 	recorder := httptest.NewRecorder()
 
 	e.ServeHTTP(recorder, req)
@@ -155,15 +155,15 @@ func TestRunProbeRejectsInvalidMemberID(t *testing.T) {
 	if recorder.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
 	}
-	if probeUseCase.calls != 0 {
-		t.Fatalf("Do calls = %d, want 0", probeUseCase.calls)
+	if scanRunUseCase.calls != 0 {
+		t.Fatalf("Do calls = %d, want 0", scanRunUseCase.calls)
 	}
 }
 
-func TestRunProbeHTMXRedirectsAfterSuccess(t *testing.T) {
-	probeUseCase := &probeUseCaseStub{probe: &domain.Probe{ID: 42}}
-	e := newGatewayWithProbeUseCase(t, probeUseCase)
-	req := newProbeRequest("192.168.1.0/24")
+func TestRunScanRunHTMXRedirectsAfterSuccess(t *testing.T) {
+	scanRunUseCase := &scanRunUseCaseStub{scanRun: &domain.ScanRun{ID: 42}}
+	e := newGatewayWithScanRunUseCase(t, scanRunUseCase)
+	req := newScanRunRequest("192.168.1.0/24")
 	req.Header.Set("HX-Request", "true")
 	recorder := httptest.NewRecorder()
 
@@ -172,18 +172,18 @@ func TestRunProbeHTMXRedirectsAfterSuccess(t *testing.T) {
 	if recorder.Code != http.StatusNoContent {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNoContent)
 	}
-	if got := recorder.Header().Get("HX-Redirect"); got != "/probes/42" {
-		t.Fatalf("HX-Redirect = %q, want %q", got, "/probes/42")
+	if got := recorder.Header().Get("HX-Redirect"); got != "/scan-runs/42" {
+		t.Fatalf("HX-Redirect = %q, want %q", got, "/scan-runs/42")
 	}
 	if got := recorder.Header().Get("HX-Refresh"); got != "" {
 		t.Fatalf("HX-Refresh = %q, want empty", got)
 	}
 }
 
-func TestRunProbeRejectsInvalidTarget(t *testing.T) {
-	probeUseCase := &probeUseCaseStub{}
-	e := newGatewayWithProbeUseCase(t, probeUseCase)
-	req := newProbeRequest("not-a-cidr")
+func TestRunScanRunRejectsInvalidTarget(t *testing.T) {
+	scanRunUseCase := &scanRunUseCaseStub{}
+	e := newGatewayWithScanRunUseCase(t, scanRunUseCase)
+	req := newScanRunRequest("not-a-cidr")
 	recorder := httptest.NewRecorder()
 
 	e.ServeHTTP(recorder, req)
@@ -194,7 +194,7 @@ func TestRunProbeRejectsInvalidTarget(t *testing.T) {
 	if !strings.Contains(recorder.Body.String(), "valid CIDR") {
 		t.Fatalf("body = %q, want a CIDR validation message", recorder.Body.String())
 	}
-	if probeUseCase.calls != 0 {
-		t.Fatalf("DoARPScan calls = %d, want 0", probeUseCase.calls)
+	if scanRunUseCase.calls != 0 {
+		t.Fatalf("DoARPScan calls = %d, want 0", scanRunUseCase.calls)
 	}
 }

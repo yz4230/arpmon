@@ -43,37 +43,37 @@ func (r *dashboardDeviceRepositoryStub) DeleteByID(_ context.Context, _ *sql.Tx,
 
 var _ repository.DeviceRepository = (*dashboardDeviceRepositoryStub)(nil)
 
-type dashboardDeviceProbeRepositoryStub struct {
-	probes []*domain.DeviceProbe
+type dashboardDeviceObservationRepositoryStub struct {
+	scanRuns []*domain.DeviceObservation
 }
 
-func (r *dashboardDeviceProbeRepositoryStub) Create(_ context.Context, _ *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error) {
-	return probe, nil
+func (r *dashboardDeviceObservationRepositoryStub) Create(_ context.Context, _ *sql.Tx, scanRun *domain.DeviceObservation) (*domain.DeviceObservation, error) {
+	return scanRun, nil
 }
 
-func (r *dashboardDeviceProbeRepositoryStub) CreateMany(_ context.Context, _ *sql.Tx, probes []*domain.DeviceProbe) ([]*domain.DeviceProbe, error) {
-	return probes, nil
+func (r *dashboardDeviceObservationRepositoryStub) CreateMany(_ context.Context, _ *sql.Tx, scanRuns []*domain.DeviceObservation) ([]*domain.DeviceObservation, error) {
+	return scanRuns, nil
 }
 
-func (r *dashboardDeviceProbeRepositoryStub) GetByID(_ context.Context, _ *sql.Tx, id int) (*domain.DeviceProbe, error) {
-	for _, probe := range r.probes {
-		if probe.ID == id {
-			return probe, nil
+func (r *dashboardDeviceObservationRepositoryStub) GetByID(_ context.Context, _ *sql.Tx, id int) (*domain.DeviceObservation, error) {
+	for _, scanRun := range r.scanRuns {
+		if scanRun.ID == id {
+			return scanRun, nil
 		}
 	}
 	return nil, sql.ErrNoRows
 }
 
-func (r *dashboardDeviceProbeRepositoryStub) List(_ context.Context, _ *sql.Tx) ([]*domain.DeviceProbe, error) {
-	return r.probes, nil
+func (r *dashboardDeviceObservationRepositoryStub) List(_ context.Context, _ *sql.Tx) ([]*domain.DeviceObservation, error) {
+	return r.scanRuns, nil
 }
 
-func (r *dashboardDeviceProbeRepositoryStub) Update(_ context.Context, _ *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error) {
-	return probe, nil
+func (r *dashboardDeviceObservationRepositoryStub) Update(_ context.Context, _ *sql.Tx, scanRun *domain.DeviceObservation) (*domain.DeviceObservation, error) {
+	return scanRun, nil
 }
 
-func (r *dashboardDeviceProbeRepositoryStub) DeleteByID(_ context.Context, _ *sql.Tx, _ int) error {
+func (r *dashboardDeviceObservationRepositoryStub) DeleteByID(_ context.Context, _ *sql.Tx, _ int) error {
 	return nil
 }
 
-var _ repository.DeviceProbeRepository = (*dashboardDeviceProbeRepositoryStub)(nil)
+var _ repository.DeviceObservationRepository = (*dashboardDeviceObservationRepositoryStub)(nil)

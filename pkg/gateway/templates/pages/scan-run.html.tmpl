@@ -1,17 +1,17 @@
 {{ define "content" }}
 <div class="container py-4">
   <div class="mb-4">
-    <a class="link-secondary text-decoration-none" href="/probes">&larr; Back to probes</a>
-    <h1 class="h3 mt-2 mb-1">Probe #{{ .Probe.ID }}</h1>
+    <a class="link-secondary text-decoration-none" href="/scan-runs">&larr; Back to scan runs</a>
+    <h1 class="h3 mt-2 mb-1">Scan run #{{ .ScanRun.ID }}</h1>
   </div>
 
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <dl class="row mb-0">
         <dt class="col-sm-3">Target</dt>
-        <dd class="col-sm-9"><code>{{ .Probe.Target.String }}</code></dd>
+        <dd class="col-sm-9"><code>{{ .ScanRun.TargetNetwork.String }}</code></dd>
         <dt class="col-sm-3">Created</dt>
-        <dd class="col-sm-9">{{ formatDateTime .Probe.CreatedAt }}</dd>
+        <dd class="col-sm-9">{{ formatDateTime .ScanRun.CreatedAt }}</dd>
       </dl>
     </div>
   </div>
@@ -47,43 +47,37 @@
         </table>
       </div>
       {{ else }}
-      <p class="text-body-secondary mb-0">No member attendance was recorded for this probe.</p>
+      <p class="text-body-secondary mb-0">No member attendance was recorded for this scan run.</p>
       {{ end }}
     </div>
   </div>
 
   <div class="card shadow-sm">
     <div class="card-header">
-      <h2 class="h5 mb-0">Device probes</h2>
+      <h2 class="h5 mb-0">Device observations</h2>
     </div>
     <div class="card-body">
-      {{ if .DeviceProbes }}
+      {{ if .DeviceObservations }}
       <div class="table-responsive">
         <table class="table table-striped table-hover align-middle mb-0">
           <thead>
             <tr>
               <th scope="col">MAC address</th>
-              <th scope="col">Visibility</th>
+              <th scope="col">IP address</th>
             </tr>
           </thead>
           <tbody>
-            {{ range .DeviceProbes }}
+            {{ range .DeviceObservations }}
             <tr>
               <th scope="row"><code>{{ .MACAddress }}</code></th>
-              <td>
-                {{ if .IsPresent }}
-                <span class="badge text-bg-success">Visible</span>
-                {{ else }}
-                <span class="badge text-bg-secondary">Not visible</span>
-                {{ end }}
-              </td>
+              <td><code>{{ .IPAddress }}</code></td>
             </tr>
             {{ end }}
           </tbody>
         </table>
       </div>
       {{ else }}
-      <p class="text-body-secondary mb-0">No device probes were recorded for this probe.</p>
+      <p class="text-body-secondary mb-0">No device observations were recorded for this scan run.</p>
       {{ end }}
     </div>
   </div>

@@ -8,8 +8,8 @@
     </div>
     <div class="d-flex flex-wrap align-items-center gap-2">
       <a class="btn btn-outline-secondary" href="/members">Members</a>
-      <a class="btn btn-outline-secondary" href="/probes">Probes</a>
-      <a class="btn btn-primary" href="/probes/new">New probe</a>
+      <a class="btn btn-outline-secondary" href="/scan-runs">Scan runs</a>
+      <a class="btn btn-primary" href="/scan-runs/new">New scan</a>
     </div>
   </div>
 
@@ -25,9 +25,9 @@
     <div class="col-md-4">
       <div class="card h-100 shadow-sm">
         <div class="card-body">
-          <p class="text-body-secondary mb-2">Total probes</p>
-          <p class="display-5 fw-semibold mb-0" data-stat="total-probe-count">{{ .Stats.TotalProbeCount }}</p>
-          <a class="small" href="/probes">View probe history &rarr;</a>
+          <p class="text-body-secondary mb-2">Total scan runs</p>
+          <p class="display-5 fw-semibold mb-0" data-stat="total-scan-run-count">{{ .Stats.TotalScanRunCount }}</p>
+          <a class="small" href="/scan-runs">View scan history &rarr;</a>
         </div>
       </div>
     </div>
@@ -46,9 +46,9 @@
     <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
       <div>
         <h2 class="h5 mb-1">Ready to scan?</h2>
-        <p class="text-body-secondary mb-0">Run a probe and record the current member attendance.</p>
+        <p class="text-body-secondary mb-0">Run a network scan and record the current member attendance.</p>
       </div>
-      <a class="btn btn-primary" href="/probes/new">Run a new probe</a>
+      <a class="btn btn-primary" href="/scan-runs/new">Run a new scan</a>
     </div>
   </div>
 </div>

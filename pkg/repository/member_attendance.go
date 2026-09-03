@@ -22,10 +22,10 @@ type memberAttendanceRepository struct{}
 
 func (r *memberAttendanceRepository) Create(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error) {
 	rows, err := tx.QueryContext(ctx, `
-		INSERT INTO member_attendances (member_id, probe_id, is_present)
+		INSERT INTO member_attendances (member_id, scan_run_id, is_present)
 		VALUES ($1, $2, $3)
-		RETURNING id, member_id, probe_id, is_present, created_at, updated_at
-	`, attendance.MemberID, attendance.ProbeID, attendance.IsPresent)
+		RETURNING id, member_id, scan_run_id, is_present, created_at, updated_at
+	`, attendance.MemberID, attendance.ScanRunID, attendance.IsPresent)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (r *memberAttendanceRepository) Create(ctx context.Context, tx *sql.Tx, att
 
 	if rows.Next() {
 		var a domain.MemberAttendance
-		if err := rows.Scan(&a.ID, &a.MemberID, &a.ProbeID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.MemberID, &a.ScanRunID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return nil, err
 		}
 		return &a, nil
@@ -52,13 +52,13 @@ func (r *memberAttendanceRepository) CreateMany(ctx context.Context, tx *sql.Tx,
 	args := make([]any, 0, len(attendances)*3)
 	for i, attendance := range attendances {
 		values[i] = fmt.Sprintf("($%d, $%d, $%d)", i*3+1, i*3+2, i*3+3)
-		args = append(args, attendance.MemberID, attendance.ProbeID, attendance.IsPresent)
+		args = append(args, attendance.MemberID, attendance.ScanRunID, attendance.IsPresent)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		INSERT INTO member_attendances (member_id, probe_id, is_present)
+		INSERT INTO member_attendances (member_id, scan_run_id, is_present)
 		VALUES `+strings.Join(values, ", ")+`
-		RETURNING id, member_id, probe_id, is_present, created_at, updated_at
+		RETURNING id, member_id, scan_run_id, is_present, created_at, updated_at
 	`, args...)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (r *memberAttendanceRepository) CreateMany(ctx context.Context, tx *sql.Tx,
 	created := make([]*domain.MemberAttendance, 0, len(attendances))
 	for rows.Next() {
 		var attendance domain.MemberAttendance
-		if err := rows.Scan(&attendance.ID, &attendance.MemberID, &attendance.ProbeID, &attendance.IsPresent, &attendance.CreatedAt, &attendance.UpdatedAt); err != nil {
+		if err := rows.Scan(&attendance.ID, &attendance.MemberID, &attendance.ScanRunID, &attendance.IsPresent, &attendance.CreatedAt, &attendance.UpdatedAt); err != nil {
 			return nil, err
 		}
 		created = append(created, &attendance)
@@ -83,7 +83,7 @@ func (r *memberAttendanceRepository) CreateMany(ctx context.Context, tx *sql.Tx,
 
 func (r *memberAttendanceRepository) GetByID(ctx context.Context, tx *sql.Tx, id int) (*domain.MemberAttendance, error) {
 	rows, err := tx.QueryContext(ctx, `
-		SELECT id, member_id, probe_id, is_present, created_at, updated_at
+		SELECT id, member_id, scan_run_id, is_present, created_at, updated_at
 		FROM member_attendances
 		WHERE id = $1
 	`, id)
@@ -95,7 +95,7 @@ func (r *memberAttendanceRepository) GetByID(ctx context.Context, tx *sql.Tx, id
 
 	if rows.Next() {
 		var a domain.MemberAttendance
-		if err := rows.Scan(&a.ID, &a.MemberID, &a.ProbeID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.MemberID, &a.ScanRunID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return nil, err
 		}
 		return &a, nil
@@ -106,7 +106,7 @@ func (r *memberAttendanceRepository) GetByID(ctx context.Context, tx *sql.Tx, id
 
 func (r *memberAttendanceRepository) List(ctx context.Context, tx *sql.Tx) ([]*domain.MemberAttendance, error) {
 	rows, err := tx.QueryContext(ctx, `
-		SELECT id, member_id, probe_id, is_present, created_at, updated_at
+		SELECT id, member_id, scan_run_id, is_present, created_at, updated_at
 		FROM member_attendances
 	`)
 	if err != nil {
@@ -118,7 +118,7 @@ func (r *memberAttendanceRepository) List(ctx context.Context, tx *sql.Tx) ([]*d
 	var attendances []*domain.MemberAttendance
 	for rows.Next() {
 		var a domain.MemberAttendance
-		if err := rows.Scan(&a.ID, &a.MemberID, &a.ProbeID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.MemberID, &a.ScanRunID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return nil, err
 		}
 		attendances = append(attendances, &a)
@@ -134,10 +134,10 @@ func (r *memberAttendanceRepository) List(ctx context.Context, tx *sql.Tx) ([]*d
 func (r *memberAttendanceRepository) Update(ctx context.Context, tx *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error) {
 	rows, err := tx.QueryContext(ctx, `
 		UPDATE member_attendances
-		SET member_id = $1, probe_id = $2, is_present = $3
+		SET member_id = $1, scan_run_id = $2, is_present = $3
 		WHERE id = $4
-		RETURNING id, member_id, probe_id, is_present, created_at, updated_at
-	`, attendance.MemberID, attendance.ProbeID, attendance.IsPresent, attendance.ID)
+		RETURNING id, member_id, scan_run_id, is_present, created_at, updated_at
+	`, attendance.MemberID, attendance.ScanRunID, attendance.IsPresent, attendance.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (r *memberAttendanceRepository) Update(ctx context.Context, tx *sql.Tx, att
 
 	if rows.Next() {
 		var a domain.MemberAttendance
-		if err := rows.Scan(&a.ID, &a.MemberID, &a.ProbeID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.MemberID, &a.ScanRunID, &a.IsPresent, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return nil, err
 		}
 		return &a, nil

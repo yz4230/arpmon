@@ -12,7 +12,7 @@ import (
 	"github.com/yz4230/arpmon/pkg/testutil"
 )
 
-func TestProbeUseCaseDoARPScan(t *testing.T) {
+func TestScanRunUseCaseDo(t *testing.T) {
 	existingMAC := mustParseMAC(t, "00:11:22:33:44:55")
 	newMAC := mustParseMAC(t, "aa:bb:cc:dd:ee:ff")
 	anotherNewMAC := mustParseMAC(t, "12:34:56:78:9a:bc")
@@ -23,7 +23,7 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 
 	scanErr := errors.New("scan failed")
 	createDevicesErr := errors.New("create devices failed")
-	createDeviceProbesErr := errors.New("create device probes failed")
+	createDeviceObservationsErr := errors.New("create device observations failed")
 
 	tests := []struct {
 		name                           string
@@ -31,13 +31,13 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 		scanErr                        error
 		existingDevices                []*domain.Device
 		createDevicesErr               error
-		createDeviceProbesErr          error
+		createDeviceObservationsErr    error
 		wantErr                        error
 		wantCreatedDevices             []wantDevice
 		wantNewDeviceMACs              []net.HardwareAddr
-		wantDeviceProbes               []wantDeviceProbe
+		wantDeviceObservations         []wantDeviceObservation
 		wantDeviceCreateManyCalls      int
-		wantDeviceProbeCreateManyCalls int
+		wantObservationCreateManyCalls int
 		wantBeginCount                 int
 		wantCommitCount                int
 		wantRollbackCount              int
@@ -52,12 +52,12 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				ID:         42,
 				MACAddress: existingMAC,
 			}},
-			wantDeviceProbes: []wantDeviceProbe{{
+			wantDeviceObservations: []wantDeviceObservation{{
 				deviceID:  42,
-				probeID:   1,
-				isPresent: true,
+				scanRunID: 1,
+				ipAddress: net.ParseIP("192.168.1.10"),
 			}},
-			wantDeviceProbeCreateManyCalls: 1,
+			wantObservationCreateManyCalls: 1,
 			wantBeginCount:                 1,
 			wantCommitCount:                1,
 		},
@@ -71,14 +71,14 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				id:  1,
 				mac: newMAC,
 			}},
-			wantDeviceProbes: []wantDeviceProbe{{
+			wantDeviceObservations: []wantDeviceObservation{{
 				deviceID:  1,
-				probeID:   1,
-				isPresent: true,
+				scanRunID: 1,
+				ipAddress: net.ParseIP("192.168.1.11"),
 			}},
 			wantNewDeviceMACs:              []net.HardwareAddr{newMAC},
 			wantDeviceCreateManyCalls:      1,
-			wantDeviceProbeCreateManyCalls: 1,
+			wantObservationCreateManyCalls: 1,
 			wantBeginCount:                 1,
 			wantCommitCount:                1,
 		},
@@ -97,21 +97,39 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				{id: 43, mac: newMAC},
 				{id: 44, mac: anotherNewMAC},
 			},
-			wantDeviceProbes: []wantDeviceProbe{
-				{deviceID: 42, probeID: 1, isPresent: true},
-				{deviceID: 43, probeID: 1, isPresent: true},
-				{deviceID: 44, probeID: 1, isPresent: true},
+			wantDeviceObservations: []wantDeviceObservation{
+				{deviceID: 42, scanRunID: 1, ipAddress: net.ParseIP("192.168.1.10")},
+				{deviceID: 43, scanRunID: 1, ipAddress: net.ParseIP("192.168.1.11")},
+				{deviceID: 44, scanRunID: 1, ipAddress: net.ParseIP("192.168.1.12")},
 			},
 			wantNewDeviceMACs:              []net.HardwareAddr{newMAC, anotherNewMAC},
 			wantDeviceCreateManyCalls:      1,
-			wantDeviceProbeCreateManyCalls: 1,
+			wantObservationCreateManyCalls: 1,
+			wantBeginCount:                 1,
+			wantCommitCount:                1,
+		},
+		{
+			name: "duplicate scanner entries are stored once",
+			entries: []*arpscan.Entry{
+				{MAC: newMAC, IP: net.ParseIP("192.168.1.11")},
+				{MAC: newMAC, IP: net.ParseIP("192.168.1.11")},
+			},
+			wantCreatedDevices: []wantDevice{{id: 1, mac: newMAC}},
+			wantDeviceObservations: []wantDeviceObservation{{
+				deviceID:  1,
+				scanRunID: 1,
+				ipAddress: net.ParseIP("192.168.1.11"),
+			}},
+			wantNewDeviceMACs:              []net.HardwareAddr{newMAC},
+			wantDeviceCreateManyCalls:      1,
+			wantObservationCreateManyCalls: 1,
 			wantBeginCount:                 1,
 			wantCommitCount:                1,
 		},
 		{
 			name:                           "no device is returned by scanner",
 			entries:                        nil,
-			wantDeviceProbeCreateManyCalls: 1,
+			wantObservationCreateManyCalls: 1,
 			wantBeginCount:                 1,
 			wantCommitCount:                1,
 		},
@@ -135,7 +153,7 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			wantRollbackCount:         1,
 		},
 		{
-			name: "device probe repository returns an error",
+			name: "device observation repository returns an error",
 			entries: []*arpscan.Entry{{
 				MAC: existingMAC,
 				IP:  net.ParseIP("192.168.1.10"),
@@ -144,10 +162,10 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				ID:         42,
 				MACAddress: existingMAC,
 			}},
-			createDeviceProbesErr:          createDeviceProbesErr,
-			wantErr:                        createDeviceProbesErr,
-			wantDeviceProbes:               []wantDeviceProbe{{deviceID: 42, probeID: 1, isPresent: true}},
-			wantDeviceProbeCreateManyCalls: 1,
+			createDeviceObservationsErr:    createDeviceObservationsErr,
+			wantErr:                        createDeviceObservationsErr,
+			wantDeviceObservations:         []wantDeviceObservation{{deviceID: 42, scanRunID: 1, ipAddress: net.ParseIP("192.168.1.10")}},
+			wantObservationCreateManyCalls: 1,
 			wantBeginCount:                 1,
 			wantRollbackCount:              1,
 		},
@@ -159,23 +177,23 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			t.Cleanup(func() { _ = testDB.Close() })
 
 			scanner := &inMemoryARPScanner{entries: tt.entries, err: tt.scanErr}
-			probeRepository := newInMemoryProbeRepository()
+			scanRunRepository := newInMemoryScanRunRepository()
 			deviceRepository := newInMemoryDeviceRepository(tt.existingDevices)
 			deviceRepository.createManyErr = tt.createDevicesErr
-			deviceProbeRepository := &inMemoryDeviceProbeRepository{createManyErr: tt.createDeviceProbesErr}
+			observationRepository := &inMemoryDeviceObservationRepository{createManyErr: tt.createDeviceObservationsErr}
 
-			uc := &probeUseCase{
-				conn:                       testDB.Conn,
-				scanner:                    scanner,
-				probeRepository:            probeRepository,
-				deviceRepository:           deviceRepository,
-				deviceProbeRepository:      deviceProbeRepository,
-				memberAttendanceRepository: &inMemoryMemberAttendanceRepository{},
+			uc := &scanRunUseCase{
+				conn:                        testDB.Conn,
+				scanner:                     scanner,
+				scanRunRepository:           scanRunRepository,
+				deviceRepository:            deviceRepository,
+				deviceObservationRepository: observationRepository,
+				memberAttendanceRepository:  &inMemoryMemberAttendanceRepository{},
 			}
 
-			gotProbe, gotErr := uc.Do(context.Background(), target, nil)
+			gotScanRun, gotErr := uc.Do(context.Background(), target, nil)
 			if !errors.Is(gotErr, tt.wantErr) {
-				t.Fatalf("DoARPScan() error = %v, want %v", gotErr, tt.wantErr)
+				t.Fatalf("Do() error = %v, want %v", gotErr, tt.wantErr)
 			}
 
 			if scanner.calls != 1 {
@@ -186,14 +204,14 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			}
 
 			if tt.wantErr == nil {
-				if gotProbe == nil || gotProbe.ID != 1 || gotProbe.Target.String() != target.String() {
-					t.Fatalf("returned probe = %#v, want ID 1 and target %s", gotProbe, target)
+				if gotScanRun == nil || gotScanRun.ID != 1 || gotScanRun.TargetNetwork.String() != target.String() {
+					t.Fatalf("returned scan run = %#v, want ID 1 and target network %s", gotScanRun, target)
 				}
-				if len(probeRepository.created) != 1 {
-					t.Fatalf("ProbeRepository.Create() created %d probes, want 1", len(probeRepository.created))
+				if len(scanRunRepository.created) != 1 {
+					t.Fatalf("ScanRunRepository.Create() created %d scan runs, want 1", len(scanRunRepository.created))
 				}
-				if got := probeRepository.created[0]; got.ID != 1 || got.Target.String() != target.String() {
-					t.Fatalf("created probe = %#v, want ID 1 and target %s", got, target)
+				if got := scanRunRepository.created[0]; got.ID != 1 || got.TargetNetwork.String() != target.String() {
+					t.Fatalf("created scan run = %#v, want ID 1 and target network %s", got, target)
 				}
 			}
 
@@ -205,11 +223,11 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				assertDeviceMACs(t, deviceRepository.received[0], tt.wantNewDeviceMACs)
 			}
 
-			if deviceProbeRepository.createManyCalls != tt.wantDeviceProbeCreateManyCalls {
-				t.Fatalf("DeviceProbeRepository.CreateMany() called %d times, want %d", deviceProbeRepository.createManyCalls, tt.wantDeviceProbeCreateManyCalls)
+			if observationRepository.createManyCalls != tt.wantObservationCreateManyCalls {
+				t.Fatalf("DeviceObservationRepository.CreateMany() called %d times, want %d", observationRepository.createManyCalls, tt.wantObservationCreateManyCalls)
 			}
-			if deviceProbeRepository.createManyCalls > 0 {
-				assertDeviceProbes(t, deviceProbeRepository.received[0], tt.wantDeviceProbes)
+			if observationRepository.createManyCalls > 0 {
+				assertDeviceObservations(t, observationRepository.received[0], tt.wantDeviceObservations)
 			}
 
 			beginCount, commitCount, rollbackCount := testDB.Snapshot()
@@ -225,10 +243,10 @@ type wantDevice struct {
 	mac net.HardwareAddr
 }
 
-type wantDeviceProbe struct {
+type wantDeviceObservation struct {
 	deviceID  int
-	probeID   int
-	isPresent bool
+	scanRunID int
+	ipAddress net.IP
 }
 
 func mustParseMAC(t *testing.T, value string) net.HardwareAddr {
@@ -267,15 +285,15 @@ func assertDeviceMACs(t *testing.T, got []*domain.Device, want []net.HardwareAdd
 	}
 }
 
-func assertDeviceProbes(t *testing.T, got []*domain.DeviceProbe, want []wantDeviceProbe) {
+func assertDeviceObservations(t *testing.T, got []*domain.DeviceObservation, want []wantDeviceObservation) {
 	t.Helper()
 
 	if len(got) != len(want) {
-		t.Fatalf("created device probes = %d, want %d", len(got), len(want))
+		t.Fatalf("created device observations = %d, want %d", len(got), len(want))
 	}
-	for i, wantProbe := range want {
-		if got[i].DeviceID != wantProbe.deviceID || got[i].ProbeID != wantProbe.probeID || got[i].IsPresent != wantProbe.isPresent {
-			t.Errorf("created device probe %d = %#v, want device ID %d, probe ID %d, and is_present %t", i, got[i], wantProbe.deviceID, wantProbe.probeID, wantProbe.isPresent)
+	for i, wantObservation := range want {
+		if got[i].DeviceID != wantObservation.deviceID || got[i].ScanRunID != wantObservation.scanRunID || !got[i].IPAddress.Equal(wantObservation.ipAddress) {
+			t.Errorf("created device observation %d = %#v, want device ID %d, scan run ID %d, and IP address %s", i, got[i], wantObservation.deviceID, wantObservation.scanRunID, wantObservation.ipAddress)
 		}
 	}
 }

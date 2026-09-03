@@ -25,45 +25,45 @@ func (s *inMemoryARPScanner) Scan(target *net.IPNet) ([]*arpscan.Entry, error) {
 
 var _ arpscan.ARPScanner = (*inMemoryARPScanner)(nil)
 
-type inMemoryProbeRepository struct {
+type inMemoryScanRunRepository struct {
 	nextID  int
-	created []*domain.Probe
+	created []*domain.ScanRun
 }
 
-func newInMemoryProbeRepository() *inMemoryProbeRepository {
-	return &inMemoryProbeRepository{nextID: 1}
+func newInMemoryScanRunRepository() *inMemoryScanRunRepository {
+	return &inMemoryScanRunRepository{nextID: 1}
 }
 
-func (r *inMemoryProbeRepository) Create(_ context.Context, _ *sql.Tx, probe *domain.Probe) (*domain.Probe, error) {
-	created := *probe
+func (r *inMemoryScanRunRepository) Create(_ context.Context, _ *sql.Tx, scanRun *domain.ScanRun) (*domain.ScanRun, error) {
+	created := *scanRun
 	created.ID = r.nextID
 	r.nextID++
 	r.created = append(r.created, &created)
 	return &created, nil
 }
 
-func (r *inMemoryProbeRepository) GetByID(_ context.Context, _ *sql.Tx, id int) (*domain.Probe, error) {
-	for _, probe := range r.created {
-		if probe.ID == id {
-			created := *probe
+func (r *inMemoryScanRunRepository) GetByID(_ context.Context, _ *sql.Tx, id int) (*domain.ScanRun, error) {
+	for _, scanRun := range r.created {
+		if scanRun.ID == id {
+			created := *scanRun
 			return &created, nil
 		}
 	}
 	return nil, sql.ErrNoRows
 }
 
-func (r *inMemoryProbeRepository) List(_ context.Context, _ *sql.Tx) ([]*domain.Probe, error) {
-	probes := make([]*domain.Probe, 0, len(r.created))
-	for _, probe := range r.created {
-		created := *probe
-		probes = append(probes, &created)
+func (r *inMemoryScanRunRepository) List(_ context.Context, _ *sql.Tx) ([]*domain.ScanRun, error) {
+	scanRuns := make([]*domain.ScanRun, 0, len(r.created))
+	for _, scanRun := range r.created {
+		created := *scanRun
+		scanRuns = append(scanRuns, &created)
 	}
-	return probes, nil
+	return scanRuns, nil
 }
 
-func (r *inMemoryProbeRepository) DeleteByID(_ context.Context, _ *sql.Tx, id int) error {
-	for i, probe := range r.created {
-		if probe.ID == id {
+func (r *inMemoryScanRunRepository) DeleteByID(_ context.Context, _ *sql.Tx, id int) error {
+	for i, scanRun := range r.created {
+		if scanRun.ID == id {
 			r.created = append(r.created[:i], r.created[i+1:]...)
 			return nil
 		}
@@ -71,7 +71,7 @@ func (r *inMemoryProbeRepository) DeleteByID(_ context.Context, _ *sql.Tx, id in
 	return sql.ErrNoRows
 }
 
-var _ repository.ProbeRepository = (*inMemoryProbeRepository)(nil)
+var _ repository.ScanRunRepository = (*inMemoryScanRunRepository)(nil)
 
 type inMemoryDeviceRepository struct {
 	nextID          int
@@ -170,28 +170,28 @@ func (r *inMemoryDeviceRepository) DeleteByID(_ context.Context, _ *sql.Tx, id i
 
 var _ repository.DeviceRepository = (*inMemoryDeviceRepository)(nil)
 
-type inMemoryDeviceProbeRepository struct {
+type inMemoryDeviceObservationRepository struct {
 	nextID          int
 	createManyErr   error
 	createManyCalls int
-	received        [][]*domain.DeviceProbe
-	created         []*domain.DeviceProbe
+	received        [][]*domain.DeviceObservation
+	created         []*domain.DeviceObservation
 }
 
-func (r *inMemoryDeviceProbeRepository) Create(_ context.Context, _ *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error) {
-	created := *probe
+func (r *inMemoryDeviceObservationRepository) Create(_ context.Context, _ *sql.Tx, observation *domain.DeviceObservation) (*domain.DeviceObservation, error) {
+	created := *observation
 	created.ID = r.nextID
 	r.nextID++
 	r.created = append(r.created, &created)
 	return &created, nil
 }
 
-func (r *inMemoryDeviceProbeRepository) CreateMany(_ context.Context, _ *sql.Tx, probes []*domain.DeviceProbe) ([]*domain.DeviceProbe, error) {
+func (r *inMemoryDeviceObservationRepository) CreateMany(_ context.Context, _ *sql.Tx, observations []*domain.DeviceObservation) ([]*domain.DeviceObservation, error) {
 	r.createManyCalls++
 
-	input := make([]*domain.DeviceProbe, 0, len(probes))
-	for _, probe := range probes {
-		copy := *probe
+	input := make([]*domain.DeviceObservation, 0, len(observations))
+	for _, observation := range observations {
+		copy := *observation
 		input = append(input, &copy)
 	}
 	r.received = append(r.received, input)
@@ -200,9 +200,9 @@ func (r *inMemoryDeviceProbeRepository) CreateMany(_ context.Context, _ *sql.Tx,
 		return nil, r.createManyErr
 	}
 
-	created := make([]*domain.DeviceProbe, 0, len(probes))
-	for _, probe := range probes {
-		copy := *probe
+	created := make([]*domain.DeviceObservation, 0, len(observations))
+	for _, observation := range observations {
+		copy := *observation
 		copy.ID = r.nextID
 		r.nextID++
 		r.created = append(r.created, &copy)
@@ -211,29 +211,29 @@ func (r *inMemoryDeviceProbeRepository) CreateMany(_ context.Context, _ *sql.Tx,
 	return created, nil
 }
 
-func (r *inMemoryDeviceProbeRepository) GetByID(_ context.Context, _ *sql.Tx, id int) (*domain.DeviceProbe, error) {
-	for _, probe := range r.created {
-		if probe.ID == id {
-			copy := *probe
+func (r *inMemoryDeviceObservationRepository) GetByID(_ context.Context, _ *sql.Tx, id int) (*domain.DeviceObservation, error) {
+	for _, observation := range r.created {
+		if observation.ID == id {
+			copy := *observation
 			return &copy, nil
 		}
 	}
 	return nil, sql.ErrNoRows
 }
 
-func (r *inMemoryDeviceProbeRepository) List(_ context.Context, _ *sql.Tx) ([]*domain.DeviceProbe, error) {
-	probes := make([]*domain.DeviceProbe, 0, len(r.created))
-	for _, probe := range r.created {
-		copy := *probe
-		probes = append(probes, &copy)
+func (r *inMemoryDeviceObservationRepository) List(_ context.Context, _ *sql.Tx) ([]*domain.DeviceObservation, error) {
+	observations := make([]*domain.DeviceObservation, 0, len(r.created))
+	for _, observation := range r.created {
+		copy := *observation
+		observations = append(observations, &copy)
 	}
-	return probes, nil
+	return observations, nil
 }
 
-func (r *inMemoryDeviceProbeRepository) Update(_ context.Context, _ *sql.Tx, probe *domain.DeviceProbe) (*domain.DeviceProbe, error) {
+func (r *inMemoryDeviceObservationRepository) Update(_ context.Context, _ *sql.Tx, observation *domain.DeviceObservation) (*domain.DeviceObservation, error) {
 	for i, current := range r.created {
-		if current.ID == probe.ID {
-			copy := *probe
+		if current.ID == observation.ID {
+			copy := *observation
 			r.created[i] = &copy
 			return &copy, nil
 		}
@@ -241,9 +241,9 @@ func (r *inMemoryDeviceProbeRepository) Update(_ context.Context, _ *sql.Tx, pro
 	return nil, sql.ErrNoRows
 }
 
-func (r *inMemoryDeviceProbeRepository) DeleteByID(_ context.Context, _ *sql.Tx, id int) error {
-	for i, probe := range r.created {
-		if probe.ID == id {
+func (r *inMemoryDeviceObservationRepository) DeleteByID(_ context.Context, _ *sql.Tx, id int) error {
+	for i, observation := range r.created {
+		if observation.ID == id {
 			r.created = append(r.created[:i], r.created[i+1:]...)
 			return nil
 		}
@@ -251,7 +251,7 @@ func (r *inMemoryDeviceProbeRepository) DeleteByID(_ context.Context, _ *sql.Tx,
 	return sql.ErrNoRows
 }
 
-var _ repository.DeviceProbeRepository = (*inMemoryDeviceProbeRepository)(nil)
+var _ repository.DeviceObservationRepository = (*inMemoryDeviceObservationRepository)(nil)
 
 type inMemoryMemberAttendanceRepository struct{}
 

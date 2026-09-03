@@ -40,9 +40,9 @@ func TestDashboardTemplateIncludesStats(t *testing.T) {
 	err := NewTemplateRenderer().ExecuteTemplate(&rendered, "index", map[string]any{
 		"Title": "ARP Monitor",
 		"Stats": DashboardStats{
-			Uptime:          "12m34s",
-			TotalProbeCount: 12,
-			MemberCount:     3,
+			Uptime:            "12m34s",
+			TotalScanRunCount: 12,
+			MemberCount:       3,
 		},
 	})
 	if err != nil {
@@ -54,22 +54,22 @@ func TestDashboardTemplateIncludesStats(t *testing.T) {
 		"Dashboard",
 		"Uptime",
 		`data-stat="uptime">12m34s<`,
-		`data-stat="total-probe-count">12<`,
+		`data-stat="total-scan-run-count">12<`,
 		`data-stat="member-count">3<`,
-		`href="/probes/new"`,
+		`href="/scan-runs/new"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("rendered dashboard is missing %q", want)
 		}
 	}
-	if strings.Contains(body, "Probes (last 7 days)") || strings.Contains(body, "recent-probe-count") {
-		t.Fatal("rendered dashboard must not contain the removed recent probe metric")
+	if strings.Contains(body, "Scan runs (last 7 days)") || strings.Contains(body, "recent-scan-run-count") {
+		t.Fatal("rendered dashboard must not contain the removed recent scan-run metric")
 	}
 }
 
-func TestNewProbeTemplateIncludesMemberAttendanceChoices(t *testing.T) {
+func TestNewScanRunTemplateIncludesMemberAttendanceChoices(t *testing.T) {
 	var rendered bytes.Buffer
-	err := NewTemplateRenderer().ExecuteTemplate(&rendered, "new-probe", map[string]any{
+	err := NewTemplateRenderer().ExecuteTemplate(&rendered, "new-scan-run", map[string]any{
 		"Title": "ARP Monitor",
 		"Members": []*domain.Member{
 			{ID: 1, Name: "Alice"},
@@ -87,13 +87,13 @@ func TestNewProbeTemplateIncludesMemberAttendanceChoices(t *testing.T) {
 		`type="radio"`,
 		"Present",
 		"Not Present",
-		`action="/probes" method="post"`,
+		`action="/scan-runs" method="post"`,
 	} {
 		if !strings.Contains(body, want) {
-			t.Errorf("rendered new probe page is missing %q", want)
+			t.Errorf("rendered new scan run page is missing %q", want)
 		}
 	}
 	if strings.Contains(body, "modal") {
-		t.Fatal("rendered new probe page must not contain modal markup")
+		t.Fatal("rendered new scan run page must not contain modal markup")
 	}
 }

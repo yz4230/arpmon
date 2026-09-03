@@ -102,10 +102,10 @@ func injectDependencies(i *do.Injector) {
 	do.ProvideValue(i, arpscan.NewARPScanner())
 	do.ProvideValue(i, repository.NewMemberRepository())
 	do.ProvideValue(i, repository.NewMemberAttendanceRepository())
-	do.ProvideValue(i, repository.NewProbeRepository())
+	do.ProvideValue(i, repository.NewScanRunRepository())
 	do.ProvideValue(i, repository.NewDeviceRepository())
-	do.ProvideValue(i, repository.NewDeviceProbeRepository())
-	do.Provide(i, func(i *do.Injector) (usecase.ProbeUseCase, error) {
-		return usecase.NewProbeUseCase(i), nil
+	do.ProvideValue(i, repository.NewDeviceObservationRepository())
+	do.Provide(i, func(i *do.Injector) (usecase.ScanRunUseCase, error) {
+		return usecase.NewScanRunUseCase(i), nil
 	})
 }
