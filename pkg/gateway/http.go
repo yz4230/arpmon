@@ -25,7 +25,6 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 
 	e.StaticFS("/static", echo.MustSubFS(staticFiles, "static"))
 	registerMemberHandlers(e, i)
-	registerProbeAttendanceHandler(e, i)
 
 	e.GET("/health", func(c *echo.Context) error {
 		var health struct {

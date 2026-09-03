@@ -20,6 +20,8 @@ func registerProbeDetailHandler(e *echo.Echo, i *do.Injector) {
 		ctx := c.Request().Context()
 		db := do.MustInvoke[*sql.DB](i)
 		probeRepository := do.MustInvoke[repository.ProbeRepository](i)
+		memberRepository := do.MustInvoke[repository.MemberRepository](i)
+		memberAttendanceRepository := do.MustInvoke[repository.MemberAttendanceRepository](i)
 
 		tx, err := db.BeginTx(ctx, nil)
 		if err != nil {
@@ -34,13 +36,22 @@ func registerProbeDetailHandler(e *echo.Echo, i *do.Injector) {
 			}
 			return err
 		}
+		attendances, err := memberAttendanceRepository.List(ctx, tx)
+		if err != nil {
+			return err
+		}
+		members, err := memberRepository.List(ctx, tx)
+		if err != nil {
+			return err
+		}
 		if err := tx.Commit(); err != nil {
 			return err
 		}
 
 		return c.Render(http.StatusOK, "probe", map[string]any{
-			"Title": "Probe",
-			"Probe": probe,
+			"Title":       "Probe",
+			"Probe":       probe,
+			"Attendances": newMemberAttendanceRows(attendances, members, probeID),
 		})
 	})
 }

@@ -160,7 +160,7 @@ func TestProbesRouteShowsProbeHistory(t *testing.T) {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
 	}
 	body := recorder.Body.String()
-	for _, want := range []string{"Probes", "192.168.1.0/24", `href="/probes/1/attendances"`, `href="/probes/new"`} {
+	for _, want := range []string{"Probes", "192.168.1.0/24", `href="/probes/1"`, `href="/probes/new"`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("probe history body is missing %q", want)
 		}
@@ -171,33 +171,6 @@ func TestProbesRouteShowsProbeHistory(t *testing.T) {
 }
 
 func TestProbeRouteShowsProbeDetails(t *testing.T) {
-	_, target, err := net.ParseCIDR("192.168.1.0/24")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	e, tdb := newGatewayWithDashboardRepositories(
-		t,
-		&memberRepositoryStub{},
-		&dashboardProbeRepositoryStub{probes: []*domain.Probe{{ID: 7, Target: target}}},
-	)
-	t.Cleanup(func() { _ = tdb.Close() })
-
-	recorder := httptest.NewRecorder()
-	e.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/probes/7", nil))
-
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
-	}
-	body := recorder.Body.String()
-	for _, want := range []string{"Probe #7", "192.168.1.0/24", `href="/probes/7/attendances"`} {
-		if !strings.Contains(body, want) {
-			t.Errorf("probe detail body is missing %q", want)
-		}
-	}
-}
-
-func TestProbeAttendancesRouteShowsMemberAttendance(t *testing.T) {
 	_, target, err := net.ParseCIDR("192.168.1.0/24")
 	if err != nil {
 		t.Fatal(err)
@@ -217,15 +190,16 @@ func TestProbeAttendancesRouteShowsMemberAttendance(t *testing.T) {
 	t.Cleanup(func() { _ = tdb.Close() })
 
 	recorder := httptest.NewRecorder()
-	e.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/probes/7/attendances", nil))
+	e.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/probes/7", nil))
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
 	}
 	body := recorder.Body.String()
 	for _, want := range []string{
-		"Member attendance",
+		"Probe #7",
 		"192.168.1.0/24",
+		"Member attendance",
 		"Alice",
 		"Bob",
 		"Present",
@@ -233,8 +207,11 @@ func TestProbeAttendancesRouteShowsMemberAttendance(t *testing.T) {
 		`<th scope="col">Member</th>`,
 	} {
 		if !strings.Contains(body, want) {
-			t.Errorf("attendance body is missing %q", want)
+			t.Errorf("probe detail body is missing %q", want)
 		}
+	}
+	if strings.Contains(body, `<th scope="col">Recorded</th>`) {
+		t.Error("probe detail body includes the removed Recorded column")
 	}
 }
 
