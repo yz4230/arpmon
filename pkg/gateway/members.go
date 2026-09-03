@@ -37,6 +37,7 @@ func registerMemberHandlers(e *echo.Echo, i *do.Injector) {
 		return c.Render(http.StatusOK, "members", map[string]any{
 			"Title":   "Members",
 			"Members": members,
+			"Message": memberSuccessMessage(c.QueryParam("status")),
 		})
 	})
 
@@ -63,7 +64,7 @@ func registerMemberHandlers(e *echo.Echo, i *do.Injector) {
 			return err
 		}
 
-		return c.Redirect(http.StatusSeeOther, "/members")
+		return c.Redirect(http.StatusSeeOther, "/members?status=created")
 	})
 
 	updateMember := func(c *echo.Context) error {
@@ -97,7 +98,7 @@ func registerMemberHandlers(e *echo.Echo, i *do.Injector) {
 			return err
 		}
 
-		return c.Redirect(http.StatusSeeOther, "/members")
+		return c.Redirect(http.StatusSeeOther, "/members?status=updated")
 	}
 	e.POST("/members/:id", updateMember)
 	e.PUT("/members/:id", updateMember)
@@ -125,10 +126,23 @@ func registerMemberHandlers(e *echo.Echo, i *do.Injector) {
 			return err
 		}
 
-		return c.Redirect(http.StatusSeeOther, "/members")
+		return c.Redirect(http.StatusSeeOther, "/members?status=deleted")
 	}
 	e.POST("/members/:id/delete", deleteMember)
 	e.DELETE("/members/:id", deleteMember)
+}
+
+func memberSuccessMessage(status string) string {
+	switch status {
+	case "created":
+		return "Member created successfully. It will appear in the attendance checklist before the next probe."
+	case "updated":
+		return "Member updated successfully. Future attendance checklists will use the new name."
+	case "deleted":
+		return "Member deleted successfully. It has been removed from future attendance checklists."
+	default:
+		return ""
+	}
 }
 
 func parseMemberID(c *echo.Context) (int, error) {

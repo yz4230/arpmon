@@ -104,17 +104,23 @@ func TestMemberCRUDRoutes(t *testing.T) {
 	if createRecorder.Code != http.StatusSeeOther {
 		t.Fatalf("create status = %d, want %d", createRecorder.Code, http.StatusSeeOther)
 	}
+	if location := createRecorder.Header().Get("Location"); location != "/members?status=created" {
+		t.Fatalf("create location = %q, want /members?status=created", location)
+	}
 	if len(memberRepository.members) != 1 || memberRepository.members[0].Name != "Alice" {
 		t.Fatalf("members after create = %#v, want Alice", memberRepository.members)
 	}
 
 	listRecorder := httptest.NewRecorder()
-	e.ServeHTTP(listRecorder, httptest.NewRequest(http.MethodGet, "/members", nil))
+	e.ServeHTTP(listRecorder, httptest.NewRequest(http.MethodGet, createRecorder.Header().Get("Location"), nil))
 	if listRecorder.Code != http.StatusOK {
 		t.Fatalf("list status = %d, want %d", listRecorder.Code, http.StatusOK)
 	}
 	if !strings.Contains(listRecorder.Body.String(), "Alice") {
 		t.Fatalf("member list body = %q, want Alice", listRecorder.Body.String())
+	}
+	if !strings.Contains(listRecorder.Body.String(), "Member created successfully. It will appear in the attendance checklist before the next probe.") {
+		t.Fatalf("member list body = %q, want create banner", listRecorder.Body.String())
 	}
 
 	updateRecorder := httptest.NewRecorder()
@@ -122,8 +128,17 @@ func TestMemberCRUDRoutes(t *testing.T) {
 	if updateRecorder.Code != http.StatusSeeOther {
 		t.Fatalf("update status = %d, want %d", updateRecorder.Code, http.StatusSeeOther)
 	}
+	if location := updateRecorder.Header().Get("Location"); location != "/members?status=updated" {
+		t.Fatalf("update location = %q, want /members?status=updated", location)
+	}
 	if memberRepository.members[0].Name != "Bob" {
 		t.Fatalf("member after update = %#v, want Bob", memberRepository.members[0])
+	}
+
+	updatedPageRecorder := httptest.NewRecorder()
+	e.ServeHTTP(updatedPageRecorder, httptest.NewRequest(http.MethodGet, updateRecorder.Header().Get("Location"), nil))
+	if !strings.Contains(updatedPageRecorder.Body.String(), "Member updated successfully. Future attendance checklists will use the new name.") {
+		t.Fatalf("updated page body = %q, want update banner", updatedPageRecorder.Body.String())
 	}
 
 	deleteRecorder := httptest.NewRecorder()
@@ -131,8 +146,17 @@ func TestMemberCRUDRoutes(t *testing.T) {
 	if deleteRecorder.Code != http.StatusSeeOther {
 		t.Fatalf("delete status = %d, want %d", deleteRecorder.Code, http.StatusSeeOther)
 	}
+	if location := deleteRecorder.Header().Get("Location"); location != "/members?status=deleted" {
+		t.Fatalf("delete location = %q, want /members?status=deleted", location)
+	}
 	if len(memberRepository.members) != 0 {
 		t.Fatalf("members after delete = %#v, want empty", memberRepository.members)
+	}
+
+	deletedPageRecorder := httptest.NewRecorder()
+	e.ServeHTTP(deletedPageRecorder, httptest.NewRequest(http.MethodGet, deleteRecorder.Header().Get("Location"), nil))
+	if !strings.Contains(deletedPageRecorder.Body.String(), "Member deleted successfully. It has been removed from future attendance checklists.") {
+		t.Fatalf("deleted page body = %q, want delete banner", deletedPageRecorder.Body.String())
 	}
 }
 
