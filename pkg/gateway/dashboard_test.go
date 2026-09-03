@@ -127,6 +127,9 @@ func TestProbesRouteShowsProbeHistory(t *testing.T) {
 			t.Errorf("probe history body is missing %q", want)
 		}
 	}
+	if strings.Contains(body, `<th scope="col">Updated</th>`) {
+		t.Error("probe history body includes the removed Updated column")
+	}
 }
 
 func TestNewProbeRouteShowsStandalonePage(t *testing.T) {

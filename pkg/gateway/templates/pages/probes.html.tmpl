@@ -20,7 +20,6 @@
               <th scope="col">ID</th>
               <th scope="col">Target</th>
               <th scope="col">Created</th>
-              <th scope="col">Updated</th>
             </tr>
           </thead>
           <tbody>
@@ -29,7 +28,6 @@
               <th scope="row">{{ .ID }}</th>
               <td><code>{{ .Target.String }}</code></td>
               <td>{{ formatDateTime .CreatedAt }}</td>
-              <td>{{ formatDateTime .UpdatedAt }}</td>
             </tr>
             {{ end }}
           </tbody>
