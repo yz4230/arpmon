@@ -261,7 +261,8 @@ func TestScanRunRouteShowsDetails(t *testing.T) {
 
 func TestNewScanRunRouteShowsStandalonePage(t *testing.T) {
 	memberRepository := &memberRepositoryStub{members: []*domain.Member{{ID: 1, Name: "Alice"}}}
-	e, tdb := newGatewayWithMemberRepository(t, memberRepository)
+	scanRunRepository := &dashboardScanRunRepositoryStub{}
+	e, tdb := newGatewayWithDashboardRepositories(t, memberRepository, scanRunRepository)
 	t.Cleanup(func() { _ = tdb.Close() })
 
 	recorder := httptest.NewRecorder()
@@ -271,12 +272,46 @@ func TestNewScanRunRouteShowsStandalonePage(t *testing.T) {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
 	}
 	body := recorder.Body.String()
-	for _, want := range []string{"Run a new scan", "Alice", `action="/scan-runs" method="post"`} {
+	for _, want := range []string{"Run a new scan", "Alice", `value="192.168.1.0/24"`, `action="/scan-runs" method="post"`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("new scanRun body is missing %q", want)
 		}
 	}
 	if strings.Contains(body, "modal") || strings.Contains(body, "data-bs-toggle") {
 		t.Fatal("new scan run page must not render modal controls")
+	}
+}
+
+func TestNewScanRunRouteUsesMostRecentTargetNetwork(t *testing.T) {
+	now := time.Now()
+	_, olderTarget, err := net.ParseCIDR("192.168.1.0/24")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, latestTarget, err := net.ParseCIDR("10.0.0.0/8")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	memberRepository := &memberRepositoryStub{}
+	scanRunRepository := &dashboardScanRunRepositoryStub{scanRuns: []*domain.ScanRun{
+		{ID: 2, TargetNetwork: olderTarget, CreatedAt: now.Add(-time.Hour)},
+		{ID: 1, TargetNetwork: latestTarget, CreatedAt: now},
+	}}
+	e, tdb := newGatewayWithDashboardRepositories(t, memberRepository, scanRunRepository)
+	t.Cleanup(func() { _ = tdb.Close() })
+
+	recorder := httptest.NewRecorder()
+	e.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/scan-runs/new", nil))
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	body := recorder.Body.String()
+	if !strings.Contains(body, `value="10.0.0.0/8"`) {
+		t.Fatalf("new scan run body is missing the latest target network: %q", body)
+	}
+	if strings.Contains(body, `value="192.168.1.0/24"`) {
+		t.Fatalf("new scan run body uses an older target network: %q", body)
 	}
 }

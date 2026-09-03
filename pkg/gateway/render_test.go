@@ -70,7 +70,8 @@ func TestDashboardTemplateIncludesStats(t *testing.T) {
 func TestNewScanRunTemplateIncludesMemberAttendanceChoices(t *testing.T) {
 	var rendered bytes.Buffer
 	err := NewTemplateRenderer().ExecuteTemplate(&rendered, "new-scan-run", map[string]any{
-		"Title": "ARP Monitor",
+		"Title":         "ARP Monitor",
+		"TargetNetwork": "10.0.0.0/8",
 		"Members": []*domain.Member{
 			{ID: 1, Name: "Alice"},
 		},
@@ -82,6 +83,7 @@ func TestNewScanRunTemplateIncludesMemberAttendanceChoices(t *testing.T) {
 	body := rendered.String()
 	for _, want := range []string{
 		"Alice",
+		`value="10.0.0.0/8"`,
 		`name="member_ids" value="1"`,
 		`name="member_presence_1"`,
 		`type="radio"`,

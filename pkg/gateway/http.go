@@ -20,6 +20,8 @@ import (
 //go:embed static
 var staticFiles embed.FS
 
+const defaultScanRunTargetNetwork = "192.168.1.0/24"
+
 func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 	e.Renderer = &echo.TemplateRenderer{Template: NewTemplateRenderer()}
 
@@ -47,6 +49,7 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 	newScanRunHandler := func(c *echo.Context) error {
 		db := do.MustInvoke[*sql.DB](i)
 		memberRepository := do.MustInvoke[repository.MemberRepository](i)
+		scanRunRepository := do.MustInvoke[repository.ScanRunRepository](i)
 		ctx := c.Request().Context()
 		tx, err := db.BeginTx(ctx, nil)
 		if err != nil {
@@ -58,13 +61,23 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 		if err != nil {
 			return err
 		}
+		scanRuns, err := scanRunRepository.List(ctx, tx)
+		if err != nil {
+			return err
+		}
 		if err := tx.Commit(); err != nil {
 			return err
 		}
 
+		targetNetwork := defaultScanRunTargetNetwork
+		if latest := latestScanRun(scanRuns); latest != nil && latest.TargetNetwork != nil {
+			targetNetwork = latest.TargetNetwork.String()
+		}
+
 		return c.Render(http.StatusOK, "new-scan-run", map[string]any{
-			"Title":   "New scan run",
-			"Members": members,
+			"Title":         "New scan run",
+			"Members":       members,
+			"TargetNetwork": targetNetwork,
 		})
 	}
 	e.GET("/scan-runs/new", newScanRunHandler)
@@ -174,4 +187,18 @@ func newDashboardStats(members []*domain.Member, scanRuns []*domain.ScanRun, upt
 		TotalScanRunCount: len(scanRuns),
 		MemberCount:       len(members),
 	}
+}
+
+func latestScanRun(scanRuns []*domain.ScanRun) *domain.ScanRun {
+	var latest *domain.ScanRun
+	for _, scanRun := range scanRuns {
+		if scanRun == nil {
+			continue
+		}
+		if latest == nil || scanRun.CreatedAt.After(latest.CreatedAt) ||
+			(scanRun.CreatedAt.Equal(latest.CreatedAt) && scanRun.ID > latest.ID) {
+			latest = scanRun
+		}
+	}
+	return latest
 }

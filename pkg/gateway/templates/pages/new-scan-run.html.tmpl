@@ -14,7 +14,7 @@
             <div id="scan-run-feedback" class="text-danger small mb-3" aria-live="polite"></div>
             <div>
               <label class="form-label" for="scan-run-target">Target network</label>
-              <input class="form-control" id="scan-run-target" name="target" type="text" value="192.168.1.0/24" placeholder="192.168.1.0/24" required aria-describedby="scan-run-target-help">
+              <input class="form-control" id="scan-run-target" name="target" type="text" value="{{ .TargetNetwork }}" placeholder="192.168.1.0/24" required aria-describedby="scan-run-target-help">
               <div class="form-text" id="scan-run-target-help">Enter the network to scan in CIDR notation.</div>
             </div>
 
