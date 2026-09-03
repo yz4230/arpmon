@@ -5,6 +5,7 @@ import (
 	"embed"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 
 	e.StaticFS("/static", echo.MustSubFS(staticFiles, "static"))
 	registerMemberHandlers(e, i)
+	registerProbeAttendanceHandler(e, i)
 
 	e.GET("/health", func(c *echo.Context) error {
 		var health struct {
@@ -102,17 +104,24 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 		}
 
 		probeUseCase := do.MustInvoke[usecase.ProbeUseCase](i)
-		if err := probeUseCase.Do(c.Request().Context(), target, members); err != nil {
+		probe, err := probeUseCase.Do(c.Request().Context(), target, members)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run probe").Wrap(err)
 		}
+		if probe == nil || probe.ID <= 0 {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Probe did not return an ID")
+		}
+		location := "/probes/" + strconv.Itoa(probe.ID)
 
 		if c.Request().Header.Get("HX-Request") == "true" {
-			c.Response().Header().Set("HX-Refresh", "true")
+			c.Response().Header().Set("HX-Redirect", location)
 			return c.NoContent(http.StatusNoContent)
 		}
 
-		return c.Redirect(http.StatusSeeOther, "/")
+		return c.Redirect(http.StatusSeeOther, location)
 	})
+
+	registerProbeDetailHandler(e, i)
 
 	e.GET("/", func(c *echo.Context) error {
 		db := do.MustInvoke[*sql.DB](i)

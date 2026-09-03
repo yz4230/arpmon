@@ -43,10 +43,12 @@ func NewTemplateRenderer() *TemplateRenderer {
 
 	return &TemplateRenderer{
 		templates: map[string]*template.Template{
-			"index":     mustParse(base, "index"),
-			"members":   mustParse(base, "members"),
-			"probes":    mustParse(base, "probes"),
-			"new-probe": mustParse(base, "new-probe"),
+			"index":       mustParse(base, "index"),
+			"members":     mustParse(base, "members"),
+			"probe":       mustParse(base, "probe"),
+			"probes":      mustParse(base, "probes"),
+			"new-probe":   mustParse(base, "new-probe"),
+			"attendances": mustParse(base, "attendances"),
 		},
 	}
 }

@@ -1,0 +1,44 @@
+{{ define "content" }}
+<div class="container py-4">
+  <div class="mb-4">
+    <a class="link-secondary text-decoration-none" href="/probes">&larr; Back to probes</a>
+    <h1 class="h3 mt-2 mb-1">Member attendance</h1>
+    <p class="text-body-secondary mb-0">Probe target: <code>{{ .Probe.Target.String }}</code></p>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      {{ if .Attendances }}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Member</th>
+              <th scope="col">Attendance</th>
+              <th scope="col">Recorded</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ range .Attendances }}
+            <tr>
+              <th scope="row">{{ .MemberName }}</th>
+              <td>
+                {{ if .IsPresent }}
+                <span class="badge text-bg-success">Present</span>
+                {{ else }}
+                <span class="badge text-bg-secondary">Not Present</span>
+                {{ end }}
+              </td>
+              <td class="text-body-secondary text-nowrap small">{{ formatDateTime .CreatedAt }}</td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+      {{ else }}
+      <p class="text-body-secondary mb-0">No member attendance was recorded for this probe.</p>
+      {{ end }}
+    </div>
+  </div>
+</div>
+{{ end }}

@@ -19,15 +19,19 @@ import (
 type probeUseCaseStub struct {
 	target  *net.IPNet
 	members []*domain.MemberAttendance
+	probe   *domain.Probe
 	calls   int
 	err     error
 }
 
-func (s *probeUseCaseStub) Do(_ context.Context, target *net.IPNet, members []*domain.MemberAttendance) error {
+func (s *probeUseCaseStub) Do(_ context.Context, target *net.IPNet, members []*domain.MemberAttendance) (*domain.Probe, error) {
 	s.calls++
 	s.target = target
 	s.members = members
-	return s.err
+	if s.probe == nil {
+		s.probe = &domain.Probe{ID: 1, Target: target}
+	}
+	return s.probe, s.err
 }
 
 var _ usecase.ProbeUseCase = (*probeUseCaseStub)(nil)
@@ -65,7 +69,7 @@ func newProbeRequestWithForm(form url.Values) *http.Request {
 }
 
 func TestRunProbe(t *testing.T) {
-	probeUseCase := &probeUseCaseStub{}
+	probeUseCase := &probeUseCaseStub{probe: &domain.Probe{ID: 42}}
 	e := newGatewayWithProbeUseCase(t, probeUseCase)
 	req := newProbeRequest(" 192.168.1.1/24 ")
 	recorder := httptest.NewRecorder()
@@ -75,8 +79,8 @@ func TestRunProbe(t *testing.T) {
 	if recorder.Code != http.StatusSeeOther {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusSeeOther)
 	}
-	if got := recorder.Header().Get("Location"); got != "/" {
-		t.Fatalf("Location = %q, want %q", got, "/")
+	if got := recorder.Header().Get("Location"); got != "/probes/42" {
+		t.Fatalf("Location = %q, want %q", got, "/probes/42")
 	}
 	if probeUseCase.calls != 1 {
 		t.Fatalf("DoARPScan calls = %d, want 1", probeUseCase.calls)
@@ -156,8 +160,8 @@ func TestRunProbeRejectsInvalidMemberID(t *testing.T) {
 	}
 }
 
-func TestRunProbeHTMXRefreshesAfterSuccess(t *testing.T) {
-	probeUseCase := &probeUseCaseStub{}
+func TestRunProbeHTMXRedirectsAfterSuccess(t *testing.T) {
+	probeUseCase := &probeUseCaseStub{probe: &domain.Probe{ID: 42}}
 	e := newGatewayWithProbeUseCase(t, probeUseCase)
 	req := newProbeRequest("192.168.1.0/24")
 	req.Header.Set("HX-Request", "true")
@@ -168,8 +172,11 @@ func TestRunProbeHTMXRefreshesAfterSuccess(t *testing.T) {
 	if recorder.Code != http.StatusNoContent {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNoContent)
 	}
-	if got := recorder.Header().Get("HX-Refresh"); got != "true" {
-		t.Fatalf("HX-Refresh = %q, want %q", got, "true")
+	if got := recorder.Header().Get("HX-Redirect"); got != "/probes/42" {
+		t.Fatalf("HX-Redirect = %q, want %q", got, "/probes/42")
+	}
+	if got := recorder.Header().Get("HX-Refresh"); got != "" {
+		t.Fatalf("HX-Refresh = %q, want empty", got)
 	}
 }
 

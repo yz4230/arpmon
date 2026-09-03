@@ -13,7 +13,7 @@ import (
 )
 
 type ProbeUseCase interface {
-	Do(ctx context.Context, target *net.IPNet, members []*domain.MemberAttendance) error
+	Do(ctx context.Context, target *net.IPNet, members []*domain.MemberAttendance) (*domain.Probe, error)
 }
 
 type probeUseCase struct {
@@ -36,26 +36,26 @@ func NewProbeUseCase(i *do.Injector) ProbeUseCase {
 	}
 }
 
-func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet, members []*domain.MemberAttendance) error {
+func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet, members []*domain.MemberAttendance) (*domain.Probe, error) {
 	entries, err := p.scanner.Scan(target)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tx, err := p.conn.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	probe, err := p.probeRepository.Create(ctx, tx, &domain.Probe{Target: target})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	devices, err := p.deviceRepository.List(ctx, tx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	deviceMap := make(map[string]*domain.Device)
 	for _, device := range devices {
@@ -74,7 +74,7 @@ func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet, members []*dom
 	if len(deviceToCreate) > 0 {
 		newDevices, err := p.deviceRepository.CreateMany(ctx, tx, deviceToCreate)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, device := range newDevices {
 			deviceMap[device.MACAddress.String()] = device
@@ -85,7 +85,7 @@ func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet, members []*dom
 	for _, entry := range entries {
 		device, ok := deviceMap[entry.MAC.String()]
 		if !ok {
-			return fmt.Errorf("device with MAC %s not found", entry.MAC.String())
+			return nil, fmt.Errorf("device with MAC %s not found", entry.MAC.String())
 		}
 
 		deviceProbes = append(deviceProbes, &domain.DeviceProbe{
@@ -96,15 +96,18 @@ func (p *probeUseCase) Do(ctx context.Context, target *net.IPNet, members []*dom
 	}
 
 	if _, err := p.deviceProbeRepository.CreateMany(ctx, tx, deviceProbes); err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, member := range members {
 		member.ProbeID = probe.ID
 	}
 	if _, err := p.memberAttendanceRepository.CreateMany(ctx, tx, members); err != nil {
-		return err
+		return nil, err
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return probe, nil
 }

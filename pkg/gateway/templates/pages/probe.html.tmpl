@@ -1,0 +1,21 @@
+{{ define "content" }}
+<div class="container py-4">
+  <div class="mb-4">
+    <a class="link-secondary text-decoration-none" href="/probes">&larr; Back to probes</a>
+    <h1 class="h3 mt-2 mb-1">Probe #{{ .Probe.ID }}</h1>
+    <p class="text-body-secondary mb-0">Network target: <code>{{ .Probe.Target.String }}</code></p>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <dl class="row mb-4">
+        <dt class="col-sm-3">Target</dt>
+        <dd class="col-sm-9"><code>{{ .Probe.Target.String }}</code></dd>
+        <dt class="col-sm-3">Created</dt>
+        <dd class="col-sm-9">{{ formatDateTime .Probe.CreatedAt }}</dd>
+      </dl>
+      <a class="btn btn-primary" href="/probes/{{ .Probe.ID }}/attendances">View member attendance</a>
+    </div>
+  </div>
+</div>
+{{ end }}

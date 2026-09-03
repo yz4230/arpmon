@@ -45,7 +45,42 @@ func (r *dashboardProbeRepositoryStub) DeleteByID(_ context.Context, _ *sql.Tx, 
 
 var _ repository.ProbeRepository = (*dashboardProbeRepositoryStub)(nil)
 
-func newGatewayWithDashboardRepositories(t *testing.T, memberRepository repository.MemberRepository, probeRepository repository.ProbeRepository) (*echo.Echo, *testutil.InMemoryDB) {
+type dashboardMemberAttendanceRepositoryStub struct {
+	attendances []*domain.MemberAttendance
+}
+
+func (r *dashboardMemberAttendanceRepositoryStub) Create(_ context.Context, _ *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error) {
+	return attendance, nil
+}
+
+func (r *dashboardMemberAttendanceRepositoryStub) CreateMany(_ context.Context, _ *sql.Tx, attendances []*domain.MemberAttendance) ([]*domain.MemberAttendance, error) {
+	return attendances, nil
+}
+
+func (r *dashboardMemberAttendanceRepositoryStub) GetByID(_ context.Context, _ *sql.Tx, id int) (*domain.MemberAttendance, error) {
+	for _, attendance := range r.attendances {
+		if attendance.ID == id {
+			return attendance, nil
+		}
+	}
+	return nil, sql.ErrNoRows
+}
+
+func (r *dashboardMemberAttendanceRepositoryStub) List(_ context.Context, _ *sql.Tx) ([]*domain.MemberAttendance, error) {
+	return r.attendances, nil
+}
+
+func (r *dashboardMemberAttendanceRepositoryStub) Update(_ context.Context, _ *sql.Tx, attendance *domain.MemberAttendance) (*domain.MemberAttendance, error) {
+	return attendance, nil
+}
+
+func (r *dashboardMemberAttendanceRepositoryStub) DeleteByID(_ context.Context, _ *sql.Tx, _ int) error {
+	return nil
+}
+
+var _ repository.MemberAttendanceRepository = (*dashboardMemberAttendanceRepositoryStub)(nil)
+
+func newGatewayWithDashboardRepositories(t *testing.T, memberRepository repository.MemberRepository, probeRepository repository.ProbeRepository, attendanceRepositories ...repository.MemberAttendanceRepository) (*echo.Echo, *testutil.InMemoryDB) {
 	t.Helper()
 
 	tdb := testutil.NewInMemoryDB()
@@ -53,6 +88,9 @@ func newGatewayWithDashboardRepositories(t *testing.T, memberRepository reposito
 	do.ProvideValue(injector, tdb.Conn)
 	do.ProvideValue(injector, memberRepository)
 	do.ProvideValue(injector, probeRepository)
+	if len(attendanceRepositories) > 0 {
+		do.ProvideValue(injector, attendanceRepositories[0])
+	}
 	do.ProvideValue(injector, usecase.ProbeUseCase(&probeUseCaseStub{}))
 	e := echo.New()
 	RegisterHandlers(e, injector)
@@ -122,13 +160,81 @@ func TestProbesRouteShowsProbeHistory(t *testing.T) {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
 	}
 	body := recorder.Body.String()
-	for _, want := range []string{"Probes", "192.168.1.0/24", `href="/probes/new"`} {
+	for _, want := range []string{"Probes", "192.168.1.0/24", `href="/probes/1/attendances"`, `href="/probes/new"`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("probe history body is missing %q", want)
 		}
 	}
 	if strings.Contains(body, `<th scope="col">Updated</th>`) {
 		t.Error("probe history body includes the removed Updated column")
+	}
+}
+
+func TestProbeRouteShowsProbeDetails(t *testing.T) {
+	_, target, err := net.ParseCIDR("192.168.1.0/24")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e, tdb := newGatewayWithDashboardRepositories(
+		t,
+		&memberRepositoryStub{},
+		&dashboardProbeRepositoryStub{probes: []*domain.Probe{{ID: 7, Target: target}}},
+	)
+	t.Cleanup(func() { _ = tdb.Close() })
+
+	recorder := httptest.NewRecorder()
+	e.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/probes/7", nil))
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	body := recorder.Body.String()
+	for _, want := range []string{"Probe #7", "192.168.1.0/24", `href="/probes/7/attendances"`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("probe detail body is missing %q", want)
+		}
+	}
+}
+
+func TestProbeAttendancesRouteShowsMemberAttendance(t *testing.T) {
+	_, target, err := net.ParseCIDR("192.168.1.0/24")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	memberRepository := &memberRepositoryStub{members: []*domain.Member{
+		{ID: 1, Name: "Alice"},
+		{ID: 2, Name: "Bob"},
+	}}
+	probeRepository := &dashboardProbeRepositoryStub{probes: []*domain.Probe{{ID: 7, Target: target}}}
+	attendanceRepository := &dashboardMemberAttendanceRepositoryStub{attendances: []*domain.MemberAttendance{
+		{ID: 1, MemberID: 1, ProbeID: 7, IsPresent: true},
+		{ID: 2, MemberID: 2, ProbeID: 7, IsPresent: false},
+		{ID: 3, MemberID: 1, ProbeID: 8, IsPresent: false},
+	}}
+	e, tdb := newGatewayWithDashboardRepositories(t, memberRepository, probeRepository, attendanceRepository)
+	t.Cleanup(func() { _ = tdb.Close() })
+
+	recorder := httptest.NewRecorder()
+	e.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/probes/7/attendances", nil))
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	body := recorder.Body.String()
+	for _, want := range []string{
+		"Member attendance",
+		"192.168.1.0/24",
+		"Alice",
+		"Bob",
+		"Present",
+		"Not Present",
+		`<th scope="col">Member</th>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("attendance body is missing %q", want)
+		}
 	}
 }
 

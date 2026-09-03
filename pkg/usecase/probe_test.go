@@ -173,7 +173,7 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 				memberAttendanceRepository: &inMemoryMemberAttendanceRepository{},
 			}
 
-			gotErr := uc.Do(context.Background(), target, nil)
+			gotProbe, gotErr := uc.Do(context.Background(), target, nil)
 			if !errors.Is(gotErr, tt.wantErr) {
 				t.Fatalf("DoARPScan() error = %v, want %v", gotErr, tt.wantErr)
 			}
@@ -186,6 +186,9 @@ func TestProbeUseCaseDoARPScan(t *testing.T) {
 			}
 
 			if tt.wantErr == nil {
+				if gotProbe == nil || gotProbe.ID != 1 || gotProbe.Target.String() != target.String() {
+					t.Fatalf("returned probe = %#v, want ID 1 and target %s", gotProbe, target)
+				}
 				if len(probeRepository.created) != 1 {
 					t.Fatalf("ProbeRepository.Create() created %d probes, want 1", len(probeRepository.created))
 				}

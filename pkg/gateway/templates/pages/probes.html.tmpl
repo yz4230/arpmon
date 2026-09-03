@@ -26,7 +26,7 @@
             {{ range .Probes }}
             <tr>
               <th scope="row">{{ .ID }}</th>
-              <td><code>{{ .Target.String }}</code></td>
+              <td><a class="link-body-emphasis" href="/probes/{{ .ID }}/attendances" aria-label="View member attendance for probe {{ .ID }}"><code>{{ .Target.String }}</code></a></td>
               <td>{{ formatDateTime .CreatedAt }}</td>
             </tr>
             {{ end }}
