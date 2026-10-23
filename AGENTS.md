@@ -8,7 +8,7 @@
 
 - `mise install` installs the pinned development tools, including Air.
 - `cp .env.example .env` creates local database and server configuration.
-- `mise run start-dev-db` starts the PostgreSQL 18.6 development container; `mise run stop-dev-db` stops it.
+- `mise run dev-db:start` starts the PostgreSQL 18.6 development container; `mise run dev-db:stop` stops it.
 - `go run . --help` lists available CLI commands; `go run . serve` runs the HTTP service.
 - `air` runs the application with live reload during development.
 - `go build ./...` compiles every package.
