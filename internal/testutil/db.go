@@ -42,6 +42,7 @@ func (f *TestDBFactory) CreateTestDatabase(t *testing.T) *TestDB {
 	if _, err := f.conn.Exec(fmt.Sprintf("CREATE DATABASE %s", pq.QuoteIdentifier(name))); err != nil {
 		t.Fatalf("failed to create test database %s: %v", name, err)
 	}
+	f.names = append(f.names, name)
 
 	config := f.baseConfig.Clone()
 	config.Database = name
@@ -52,7 +53,7 @@ func (f *TestDBFactory) CreateTestDatabase(t *testing.T) *TestDB {
 func (f *TestDBFactory) Close() error {
 	if f.conn != nil {
 		for _, name := range f.names {
-			if _, err := f.conn.Exec(fmt.Sprintf("DROP DATABASE %s", pq.QuoteIdentifier(name))); err != nil {
+			if _, err := f.conn.Exec(fmt.Sprintf("DROP DATABASE %s WITH (FORCE)", pq.QuoteIdentifier(name))); err != nil {
 				return fmt.Errorf("failed to drop database %s: %v", name, err)
 			}
 		}
