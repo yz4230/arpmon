@@ -67,7 +67,7 @@ func registerMemberHandlers(e *echo.Echo, i *do.Injector) {
 		return c.Redirect(http.StatusSeeOther, "/members?status=created")
 	})
 
-	updateMember := func(c *echo.Context) error {
+	e.POST("/members/:id", func(c *echo.Context) error {
 		id, err := parseMemberID(c)
 		if err != nil {
 			return c.String(http.StatusBadRequest, "Member ID must be a positive integer.")
@@ -99,11 +99,9 @@ func registerMemberHandlers(e *echo.Echo, i *do.Injector) {
 		}
 
 		return c.Redirect(http.StatusSeeOther, "/members?status=updated")
-	}
-	e.POST("/members/:id", updateMember)
-	e.PUT("/members/:id", updateMember)
+	})
 
-	deleteMember := func(c *echo.Context) error {
+	e.POST("/members/:id/delete", func(c *echo.Context) error {
 		id, err := parseMemberID(c)
 		if err != nil {
 			return c.String(http.StatusBadRequest, "Member ID must be a positive integer.")
@@ -127,9 +125,7 @@ func registerMemberHandlers(e *echo.Echo, i *do.Injector) {
 		}
 
 		return c.Redirect(http.StatusSeeOther, "/members?status=deleted")
-	}
-	e.POST("/members/:id/delete", deleteMember)
-	e.DELETE("/members/:id", deleteMember)
+	})
 }
 
 func memberSuccessMessage(status string) string {

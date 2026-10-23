@@ -2,24 +2,13 @@ package gateway
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
-	"github.com/labstack/echo/v5"
 	"github.com/yz4230/arpmon/internal/domain"
 )
 
 type memberAttendanceRow struct {
 	MemberName string
 	IsPresent  bool
-}
-
-func parseScanRunID(c *echo.Context) (int, error) {
-	id, err := strconv.Atoi(strings.TrimSpace(c.Param("id")))
-	if err != nil || id <= 0 {
-		return 0, fmt.Errorf("invalid scan run id")
-	}
-	return id, nil
 }
 
 func newMemberAttendanceRows(attendances []*domain.MemberAttendance, members []*domain.Member, scanRunID int) []memberAttendanceRow {
