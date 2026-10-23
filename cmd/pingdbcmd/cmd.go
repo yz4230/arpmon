@@ -6,7 +6,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/spf13/cobra"
-	"github.com/yz4230/arpmon/pkg/db"
+	"github.com/yz4230/arpmon/internal/db"
 )
 
 var PingDBCmd = &cobra.Command{

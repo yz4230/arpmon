@@ -10,7 +10,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/lib/pq"
 	"github.com/spf13/cobra"
-	"github.com/yz4230/arpmon/pkg/db"
+	"github.com/yz4230/arpmon/internal/db"
 )
 
 var MigrateDBCmd = &cobra.Command{

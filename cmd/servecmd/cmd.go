@@ -13,11 +13,11 @@ import (
 	"github.com/lib/pq"
 	"github.com/samber/do"
 	"github.com/spf13/cobra"
-	"github.com/yz4230/arpmon/pkg/arpscan"
-	"github.com/yz4230/arpmon/pkg/db"
-	"github.com/yz4230/arpmon/pkg/gateway"
-	"github.com/yz4230/arpmon/pkg/repository"
-	"github.com/yz4230/arpmon/pkg/usecase"
+	"github.com/yz4230/arpmon/internal/arpscan"
+	"github.com/yz4230/arpmon/internal/db"
+	"github.com/yz4230/arpmon/internal/gateway"
+	"github.com/yz4230/arpmon/internal/repository"
+	"github.com/yz4230/arpmon/internal/usecase"
 )
 
 var ServeCmd = &cobra.Command{

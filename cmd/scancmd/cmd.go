@@ -5,7 +5,7 @@ import (
 	"net"
 
 	"github.com/spf13/cobra"
-	"github.com/yz4230/arpmon/pkg/arpscan"
+	"github.com/yz4230/arpmon/internal/arpscan"
 )
 
 var scanFlags struct {
