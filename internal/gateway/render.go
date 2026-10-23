@@ -15,7 +15,7 @@ import (
 //go:embed templates
 var templateFiles embed.FS
 
-type TemplateRenderer struct {
+type templateRenderer struct {
 	templates map[string]*template.Template
 }
 
@@ -23,7 +23,7 @@ func formatDateTime(value time.Time) string {
 	return value.Format(time.DateTime) + " (" + humanize.Time(value) + ")"
 }
 
-func NewTemplateRenderer() *TemplateRenderer {
+func newTemplateRenderer() *templateRenderer {
 	const ext = ".html.tmpl"
 	base := template.Must(template.New("base").Funcs(template.FuncMap{
 		"formatDateTime": formatDateTime,
@@ -41,7 +41,7 @@ func NewTemplateRenderer() *TemplateRenderer {
 		return tmpl
 	}
 
-	return &TemplateRenderer{
+	return &templateRenderer{
 		templates: map[string]*template.Template{
 			"index":        mustParse(base, "index"),
 			"members":      mustParse(base, "members"),
@@ -52,7 +52,7 @@ func NewTemplateRenderer() *TemplateRenderer {
 	}
 }
 
-func (r *TemplateRenderer) ExecuteTemplate(wr io.Writer, name string, data any) error {
+func (r *templateRenderer) ExecuteTemplate(wr io.Writer, name string, data any) error {
 	tmpl, ok := r.templates[name]
 	if !ok {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong XD")

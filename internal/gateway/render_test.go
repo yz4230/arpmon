@@ -37,9 +37,9 @@ func TestFormatUptimeRoundsToNearestSecond(t *testing.T) {
 
 func TestDashboardTemplateIncludesStats(t *testing.T) {
 	var rendered bytes.Buffer
-	err := NewTemplateRenderer().ExecuteTemplate(&rendered, "index", map[string]any{
+	err := newTemplateRenderer().ExecuteTemplate(&rendered, "index", map[string]any{
 		"Title": "ARP Monitor",
-		"Stats": DashboardStats{
+		"Stats": dashboardStats{
 			Uptime:            "12m34s",
 			TotalScanRunCount: 12,
 			MemberCount:       3,
@@ -69,7 +69,7 @@ func TestDashboardTemplateIncludesStats(t *testing.T) {
 
 func TestNewScanRunTemplateIncludesMemberAttendanceChoices(t *testing.T) {
 	var rendered bytes.Buffer
-	err := NewTemplateRenderer().ExecuteTemplate(&rendered, "new-scan-run", map[string]any{
+	err := newTemplateRenderer().ExecuteTemplate(&rendered, "new-scan-run", map[string]any{
 		"Title":         "ARP Monitor",
 		"TargetNetwork": "10.0.0.0/8",
 		"Members": []*domain.Member{

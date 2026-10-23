@@ -21,7 +21,7 @@ type Migration struct {
 	CreatedAt time.Time
 }
 
-func CreateMigrationsTable(ctx context.Context, tx *sql.Tx) error {
+func createMigrationsTable(ctx context.Context, tx *sql.Tx) error {
 	_, err := tx.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS migrations (
 			id SERIAL PRIMARY KEY,
@@ -34,7 +34,7 @@ func CreateMigrationsTable(ctx context.Context, tx *sql.Tx) error {
 }
 
 func ListMigrations(ctx context.Context, tx *sql.Tx) ([]*Migration, error) {
-	if err := CreateMigrationsTable(ctx, tx); err != nil {
+	if err := createMigrationsTable(ctx, tx); err != nil {
 		return nil, err
 	}
 
@@ -59,8 +59,8 @@ func ListMigrations(ctx context.Context, tx *sql.Tx) ([]*Migration, error) {
 	return migrations, nil
 }
 
-func CreateMigration(ctx context.Context, tx *sql.Tx, name string) error {
-	if err := CreateMigrationsTable(ctx, tx); err != nil {
+func createMigration(ctx context.Context, tx *sql.Tx, name string) error {
+	if err := createMigrationsTable(ctx, tx); err != nil {
 		return err
 	}
 
@@ -107,7 +107,7 @@ func ApplyMigrations(ctx context.Context, tx *sql.Tx) error {
 			return err
 		}
 
-		if err := CreateMigration(ctx, tx, stem); err != nil {
+		if err := createMigration(ctx, tx, stem); err != nil {
 			return err
 		}
 

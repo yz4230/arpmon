@@ -17,7 +17,7 @@ import (
 var staticFiles embed.FS
 
 func RegisterHandlers(e *echo.Echo, i *do.Injector) {
-	e.Renderer = &echo.TemplateRenderer{Template: NewTemplateRenderer()}
+	e.Renderer = &echo.TemplateRenderer{Template: newTemplateRenderer()}
 
 	e.StaticFS("/static", echo.MustSubFS(staticFiles, "static"))
 	registerMemberHandlers(e, i)
@@ -71,7 +71,7 @@ func RegisterHandlers(e *echo.Echo, i *do.Injector) {
 	})
 }
 
-type DashboardStats struct {
+type dashboardStats struct {
 	Uptime            string
 	TotalScanRunCount int
 	MemberCount       int
@@ -81,8 +81,8 @@ func formatUptime(value time.Duration) string {
 	return value.Round(time.Second).String()
 }
 
-func newDashboardStats(members []*domain.Member, scanRuns []*domain.ScanRun, uptimeText string) DashboardStats {
-	return DashboardStats{
+func newDashboardStats(members []*domain.Member, scanRuns []*domain.ScanRun, uptimeText string) dashboardStats {
+	return dashboardStats{
 		Uptime:            uptimeText,
 		TotalScanRunCount: len(scanRuns),
 		MemberCount:       len(members),
