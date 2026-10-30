@@ -6,7 +6,7 @@ require (
 	github.com/dustin/go-humanize v1.1.0
 	github.com/fatih/color v1.19.0
 	github.com/joho/godotenv v1.5.1
-	github.com/labstack/echo/v5 v5.4.2
+	github.com/labstack/echo/v5 v5.4.4
 	github.com/lib/pq v1.12.3
 	github.com/lmittmann/tint v1.2.1
 	github.com/samber/do v1.6.0
