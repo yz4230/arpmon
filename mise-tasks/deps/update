@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+#MISE description="Update Go module dependencies and the go directive, then commit"
+set -euxo pipefail
+
+latest_go=$(curl -fsSL 'https://go.dev/VERSION?m=text' | head -n1)
+go_minor=$(sed -E 's/^go([0-9]+\.[0-9]+).*/\1/' <<<"$latest_go")
+current_go=$(go mod edit -json | jq -r .Go)
+
+go mod edit -go="$go_minor" -toolchain=none
+go get -u ./...
+go mod tidy
+go mod edit -toolchain=none
+
+go build ./...
+go vet ./...
+
+if git diff --quiet -- go.mod go.sum; then
+  echo "Dependencies are already up to date"
+  exit 0
+fi
+
+if [[ "$current_go" != "$go_minor" ]]; then
+  message="chore(deps): update Go to $go_minor and module dependencies"
+else
+  message="chore(deps): update Go module dependencies"
+fi
+
+git add go.mod go.sum
+git commit -m "$message"
