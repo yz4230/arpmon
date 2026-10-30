@@ -20,5 +20,6 @@ func LoadConfigFromEnv() (pq.Config, error) {
 		Password: os.Getenv("DB_PASSWORD"),
 		Database: os.Getenv("DB_NAME"),
 		SSLMode:  pq.SSLMode(os.Getenv("DB_SSL_MODE")),
+		Runtime:  map[string]string{"timezone": "UTC"},
 	}, nil
 }
